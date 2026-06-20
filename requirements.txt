@@ -1,0 +1,14 @@
+numpy
+pandas
+scipy
+scikit-learn
+matplotlib
+seaborn
+openpyxl
+rdkit
+tqdm
+requests
+chemprop
+pymzml
+pyopenms
+pubchempy

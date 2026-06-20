@@ -1,0 +1,5 @@
+translated note
+============================================================
+: 2026-01-31 11:01:13
+outputdirectory: training_data/SMRT
+SMRT_dataset.sdf: (79955/79955)

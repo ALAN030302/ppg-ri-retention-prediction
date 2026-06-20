@@ -1,0 +1,18 @@
+SDFfile
+==================================================
+: 2026-01-31 11:01:13
+Version: 2.0.0
+outputdirectory: training_data/SMRT
+output: csv, excel
+calculate:
+translated note
+results:
+translated note
+[1] file: SMRT_dataset.sdf
+:
+molecule: 79955
+molecule: 79955
+: 115.66
+outputfile:
+- SMRT_dataset_SMRT_dataset.csv (24506.8 KB)
+- SMRT_dataset_SMRT_dataset.xlsx (12169.8 KB)

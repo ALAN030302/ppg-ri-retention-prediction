@@ -1,0 +1,29 @@
+{
+    "scatter_alpha": 0.7,
+    "scatter_size": 50,
+    "line_width": 3.0,
+    "grid_alpha": 0.34,
+    "font_size": 18,
+    "title_size": 12,
+    "colors": {
+        "rt_smrt_pred": "#012f48",
+        "rt_M1_pred": "#7a0101",
+        "rt_M2_pred": "#035830",
+        "rt_M3_pred": "#669aba",
+        "rt_actual": "#4c4c4c",
+        "rti_M3_pred": "#be1420"
+    },
+    "show_grid": true,
+    "show_legend": true,
+    "show_r_squared": true,
+    "show_regression_line": true,
+    "show_error_bars": true,
+    "show_trend_line": true,
+    "marker_shape": "o",
+    "bar_width": 0.15,
+    "dpi": 100,
+    "color_direct": "#1f77b4",
+    "color_ri": "#ff7f0e",
+    "color_actual": "#2ca02c",
+    "color_error": "#d62728"
+}
