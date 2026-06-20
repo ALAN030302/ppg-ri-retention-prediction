@@ -10,12 +10,11 @@ The package supports the study workflow for converting chromatographic retention
 
 This package is intended as a reproducibility and peer-review support archive. The code was translated and lightly cleaned for public release. Several scripts remain legacy analysis scripts that were used interactively during the study, so exact reruns may require selecting local input files or adapting paths to the user's environment.
 
-Recommended publication route:
+Current public record:
 
-1. Upload this curated folder to GitHub as `ppg-ri-retention-prediction`.
-2. Create a versioned GitHub release.
-3. Archive the release on Zenodo, Figshare, OSF, or an institutional repository to obtain a persistent DOI.
-4. Replace the placeholders in the manuscript and in `CODE_AVAILABILITY.md` with the final repository URL and DOI.
+- GitHub repository: <https://github.com/ALAN030302/ppg-ri-retention-prediction>
+- Versioned GitHub release: `v1.0.0`
+- Persistent archival DOI: pending Zenodo, Figshare, OSF, or institutional repository deposition.
 
 GitHub is useful for code review and version tracking, but a persistent archival DOI is preferred for long-term citation.
 
