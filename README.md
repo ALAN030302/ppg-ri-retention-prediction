@@ -14,9 +14,6 @@ Current public record:
 
 - GitHub repository: <https://github.com/ALAN030302/ppg-ri-retention-prediction>
 - Versioned GitHub release: `v1.0.0`
-- Persistent archival DOI: pending Zenodo, Figshare, OSF, or institutional repository deposition.
-
-GitHub is useful for code review and version tracking, but a persistent archival DOI is preferred for long-term citation.
 
 ## Directory Structure
 
@@ -182,34 +179,6 @@ Generated plots may be written to `Rentention_index_analysis/analysis_charts/` o
 - Some scripts are exploratory or figure-specific rather than a single automated pipeline.
 - Some helper scripts require local intermediate files that are not part of the final manuscript dataset.
 - Keep raw, processed, and figure-source data separate in any future repository expansion.
-- If model checkpoints are too large for GitHub, store them in Zenodo, Figshare, OSF, an institutional repository, or Git LFS, and link them from this README.
-- If third-party data or model artifacts are redistributed, confirm that their license permits redistribution and cite the original source.
-
-## Suggested Manuscript Availability Text
-
-Replace bracketed fields before submission:
-
-```text
-The processed data, model configuration files, analysis scripts, generated analysis charts, and trained model artifacts supporting this study are available at https://github.com/ALAN030302/ppg-ri-retention-prediction. A preserved release will be archived in [Zenodo/Figshare/OSF/institutional repository] under [DOI]. The repository includes processed training and validation data, PPG retention-index conversion scripts, Chemprop configuration files, model-comparison scripts, generated analysis charts, and trained Chemprop model artifacts. Public third-party datasets used in the analysis are described in the repository README and should be cited according to their original sources.
-```
-
-If the repository is not public during peer review:
-
-```text
-The processed data, model configuration files, analysis scripts, generated analysis charts, and trained model artifacts supporting this study have been deposited in [repository] under [DOI/accession/private reviewer link]. The record will be made public upon publication.
-```
-
-## Citation
-
-If this repository is archived with a DOI, cite it as:
-
-```text
-Yao, Q.; Liang, W.; Tan, J.; Fan, R. PPG-RI Retention Prediction Supporting Code and Data, version [VERSION]. [Repository], [Year]. [DOI].
-```
-
-## License
-
-License information has not yet been finalized. See `LICENSE_NOTICE.md` before making the repository public.
 
 ## Contact
 

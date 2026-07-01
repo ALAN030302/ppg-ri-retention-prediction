@@ -138,7 +138,7 @@ class PPGIndexCalculator:
         except Exception as e:
             return False, f"loadcompound datafailed: {str(e)}"
 
-    def fit_standard_curve(self, condition: str = "default", model_type: str = "logarithmic") -> Tuple[bool, str]:
+    def fit_standard_curve(self, condition: str = "default", model_type: str = "linear") -> Tuple[bool, str]:
         try:
             if condition not in self.ppg_data:
                 return False, f"condition {condition} PPG data"
@@ -152,7 +152,7 @@ class PPGIndexCalculator:
                 model_name = "Logarithmic (RT = a + b·ln(n))"
             elif model_type == "linear":
                 x_fit = x
-                model_name = "Linear (RT = a + b·ln(n))"
+                model_name = "Linear (RT = a + b·n)"
             else:
                 return False, f"model: {model_type}"
             slope, intercept, r_value, p_value, std_err = stats.linregress(x_fit, y)
@@ -207,7 +207,7 @@ class PPGIndexCalculator:
                         indices[key] = pd.DataFrame(results)
             elif method == "regression":
                 if condition not in self.standard_curves:
-                    success, msg = self.fit_standard_curve(condition, model_type="logarithmic")
+                    success, msg = self.fit_standard_curve(condition, model_type="linear")
                     if not success:
                         return False, f"Use: {msg}"
                 curve = self.standard_curves[condition]
@@ -308,7 +308,7 @@ class PPGIndexCalculator:
             if from_condition not in self.ppg_indices:
                 return pd.DataFrame(), f"condition {from_condition} PPGindexdata"
             if to_condition not in self.standard_curves:
-                success, msg = self.fit_standard_curve(to_condition, "logarithmic")
+                success, msg = self.fit_standard_curve(to_condition, "linear")
                 if not success:
                     return pd.DataFrame(), f"condition {to_condition} standard curve: {msg}"
             curve = self.standard_curves[to_condition]
@@ -1099,8 +1099,8 @@ class PPGIndexAnalyzerGUI:
         self.curve_condition_combo = ttk.Combobox(curve_frame, textvariable=self.curve_condition_var, width=25, state="readonly")
         self.curve_condition_combo.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
         ttk.Label(curve_frame, text="Model:").grid(row=0, column=2, sticky=tk.W, padx=5, pady=5)
-        self.model_type_var = tk.StringVar(value="logarithmic")
-        ttk.Combobox(curve_frame, textvariable=self.model_type_var, values=["logarithmic", "linear"], width=15, state="readonly").grid(row=0, column=3, sticky=tk.W, padx=5, pady=5)
+        self.model_type_var = tk.StringVar(value="linear")
+        ttk.Combobox(curve_frame, textvariable=self.model_type_var, values=["linear", "logarithmic"], width=15, state="readonly").grid(row=0, column=3, sticky=tk.W, padx=5, pady=5)
         ttk.Button(curve_frame, text="Fit Curve", command=self.fit_standard_curve).grid(row=0, column=4, padx=20, pady=5)
         calc_frame = ttk.LabelFrame(analysis_frame, text="PPG Index Calculation", padding=10)
         calc_frame.pack(fill=tk.X, pady=(0, 15))

@@ -110,7 +110,7 @@ class IndexToRTConverter:
         except Exception as e:
             return False, f"loadretention_indexdatafailed: {str(e)}"
 
-    def fit_standard_curve(self, condition="default", model_type="logarithmic"):
+    def fit_standard_curve(self, condition="default", model_type="linear"):
         """standard curve"""
         try:
             if condition not in self.ppg_data:
@@ -436,9 +436,9 @@ class IndexFileConverterGUI:
         # model
         ttk.Label(condition_frame, text="model:").pack(side=tk.LEFT, padx=(0, 5))
 
-        self.curve_model_var = tk.StringVar(value="logarithmic")
+        self.curve_model_var = tk.StringVar(value="linear")
         curve_model_combo = ttk.Combobox(condition_frame, textvariable=self.curve_model_var,
-                                         values=["logarithmic", "linear"],
+                                         values=["linear", "logarithmic"],
                                          width=15, state="readonly")
         curve_model_combo.pack(side=tk.LEFT, padx=(0, 20))
 

@@ -179,7 +179,7 @@ class PPGIndexCalculator:
             return False, f"loadcompound datafailed: {str(e)}"
 
     def fit_standard_curve(self, condition: str = "default",
-                           model_type: str = "logarithmic") -> Tuple[bool, str]:
+                           model_type: str = "linear") -> Tuple[bool, str]:
         """
         PPGstandard curve
 
@@ -325,7 +325,7 @@ class PPGIndexCalculator:
             elif method == "regression":
                 # (Usestandard curve)
                 if condition not in self.standard_curves:
-                    success, msg = self.fit_standard_curve(condition, model_type="logarithmic")
+                    success, msg = self.fit_standard_curve(condition, model_type="linear")
                     if not success:
                         return False, f"Use: {msg}"
 
@@ -520,7 +520,7 @@ class PPGIndexCalculator:
             # conditionstandard curve
             if to_condition not in self.standard_curves:
                 # standard curve
-                success, msg = self.fit_standard_curve(to_condition, "logarithmic")
+                success, msg = self.fit_standard_curve(to_condition, "linear")
                 if not success:
                     return pd.DataFrame(), f"condition {to_condition} standard curve: {msg}"
 
@@ -577,11 +577,13 @@ class PPGIndexCalculator:
                             'compound_name': compound_name,
                             f'{from_condition}_PPGindex': ppg_index,
                             f'{from_condition}_degree_of_polymerization': n_calc,
-                            f'{to_condition}_RT': rt_pred,
+                            f'{to_condition}_predicted_RT': rt_pred,
+                            f'{to_condition}_measured_RT': rt_actual,
                             f'{to_condition}_RT': rt_actual,
                             '(min)': absolute_error,
                             '(%)': relative_error,
-                            'condition': from_condition,
+                            'source_condition': from_condition,
+                            'target_condition': to_condition,
                             'condition': to_condition
                         }
 
@@ -1811,9 +1813,9 @@ class PPGIndexAnalyzerGUI:
         self.curve_condition_combo.grid(row=0, column=1, sticky=tk.W, padx=(0, 10), pady=5)
 
         ttk.Label(curve_frame, text="model:").grid(row=0, column=2, sticky=tk.W, padx=(0, 5), pady=5)
-        self.model_type_var = tk.StringVar(value="logarithmic")
+        self.model_type_var = tk.StringVar(value="linear")
         model_combo = ttk.Combobox(curve_frame, textvariable=self.model_type_var,
-                                   values=["logarithmic", "linear"],
+                                   values=["linear", "logarithmic"],
                                    width=15, state="readonly")
         model_combo.grid(row=0, column=3, sticky=tk.W, padx=(0, 10), pady=5)
 

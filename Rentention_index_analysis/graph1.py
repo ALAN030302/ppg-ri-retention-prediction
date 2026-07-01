@@ -135,7 +135,7 @@ class PPGIndexCalculator:
             return False, f"loadcompound datafailed: {str(e)}"
 
     def fit_standard_curve(self, condition: str = "default",
-                           model_type: str = "logarithmic") -> Tuple[bool, str]:
+                           model_type: str = "linear") -> Tuple[bool, str]:
         """PPGstandard curve"""
         try:
             if condition not in self.ppg_data:
@@ -226,7 +226,7 @@ class PPGIndexCalculator:
 
             elif method == "regression":
                 if condition not in self.standard_curves:
-                    success, msg = self.fit_standard_curve(condition, model_type="logarithmic")
+                    success, msg = self.fit_standard_curve(condition, model_type="linear")
                     if not success:
                         return False, f"Use: {msg}"
                 curve = self.standard_curves[condition]
@@ -336,7 +336,7 @@ class PPGIndexCalculator:
             if from_condition not in self.ppg_indices:
                 return pd.DataFrame(), f"condition {from_condition} PPGindexdata"
             if to_condition not in self.standard_curves:
-                success, msg = self.fit_standard_curve(to_condition, "logarithmic")
+                success, msg = self.fit_standard_curve(to_condition, "linear")
                 if not success:
                     return pd.DataFrame(), f"condition {to_condition} standard curve: {msg}"
 
@@ -1297,9 +1297,9 @@ class PPGIndexAnalyzerGUI:
         self.curve_condition_combo.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
 
         ttk.Label(curve_frame, text="Model:").grid(row=0, column=2, sticky=tk.W, padx=5, pady=5)
-        self.model_type_var = tk.StringVar(value="logarithmic")
+        self.model_type_var = tk.StringVar(value="linear")
         ttk.Combobox(curve_frame, textvariable=self.model_type_var,
-                     values=["logarithmic", "linear"], width=15, state="readonly").grid(row=0, column=3, sticky=tk.W, padx=5, pady=5)
+                     values=["linear", "logarithmic"], width=15, state="readonly").grid(row=0, column=3, sticky=tk.W, padx=5, pady=5)
 
         ttk.Button(curve_frame, text="Fit Curve", command=self.fit_standard_curve).grid(row=0, column=4, padx=20, pady=5)
 

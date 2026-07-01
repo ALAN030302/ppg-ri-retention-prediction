@@ -176,7 +176,7 @@ class PPGIndexCalculator:
             return False, f"loadcompound datafailed: {str(e)}"
 
     def fit_standard_curve(self, condition: str = "default",
-                           model_type: str = "logarithmic") -> Tuple[bool, str]:
+                           model_type: str = "linear") -> Tuple[bool, str]:
         """
         PPGstandard curve
 
@@ -322,7 +322,7 @@ class PPGIndexCalculator:
             elif method == "regression":
                 # (Usestandard curve)
                 if condition not in self.standard_curves:
-                    success, msg = self.fit_standard_curve(condition, model_type="logarithmic")
+                    success, msg = self.fit_standard_curve(condition, model_type="linear")
                     if not success:
                         return False, f"Use: {msg}"
 
@@ -1234,9 +1234,9 @@ class PPGIndexAnalyzerGUI:
         self.curve_condition_combo.grid(row=0, column=1, sticky=tk.W, padx=(0, 10), pady=5)
 
         ttk.Label(curve_frame, text="model:").grid(row=0, column=2, sticky=tk.W, padx=(0, 5), pady=5)
-        self.model_type_var = tk.StringVar(value="logarithmic")
+        self.model_type_var = tk.StringVar(value="linear")
         model_combo = ttk.Combobox(curve_frame, textvariable=self.model_type_var,
-                                   values=["logarithmic", "linear"],
+                                   values=["linear", "logarithmic"],
                                    width=15, state="readonly")
         model_combo.grid(row=0, column=3, sticky=tk.W, padx=(0, 10), pady=5)
 

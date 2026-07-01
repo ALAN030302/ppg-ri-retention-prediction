@@ -77,7 +77,7 @@ class PPGExperimentAnalyzer:
 
         # experimental parameters
         self.experiment_params = {
-            'ppg_model_type': 'logarithmic', # PPG model type
+            'ppg_model_type': 'linear', # PPG model type
             'calibration_method': 'linear', # calibration methods
             'validation_split': 0.2, # validation split
             'random_seed': 42 #
@@ -265,15 +265,12 @@ class PPGExperimentAnalyzer:
                 rt_calc = rt_i + (rt_j - rt_i) * (n_target - n_i) / (n_j - n_i)
 
         elif method == "regression":
-            # - UsePPGstandard curve
-            # model: RT = a + b * ln(n)
-            log_n = np.log(ppg_n)
-
-            # translated note
-            slope, intercept, r_value, p_value, std_err = stats.linregress(log_n, ppg_rt)
+            # Use the PPG standard curve as a direct n-based linear ruler:
+            # RT = a + b * n.
+            slope, intercept, r_value, p_value, std_err = stats.linregress(ppg_n, ppg_rt)
 
             # retention_time
-            rt_calc = intercept + slope * np.log(n_target)
+            rt_calc = intercept + slope * n_target
 
             # Parameters
             if 'regression_params' not in self.calibration_methods:
@@ -821,10 +818,9 @@ class PPGExperimentAnalyzer:
 
             # translated note
             try:
-                log_n = np.log(n_values)
-                slope, intercept, r_value, _, _ = stats.linregress(log_n, rt_values)
+                slope, intercept, r_value, _, _ = stats.linregress(n_values, rt_values)
                 n_fit = np.linspace(n_values.min(), n_values.max(), 100)
-                rt_fit = intercept + slope * np.log(n_fit)
+                rt_fit = intercept + slope * n_fit
 
                 ax.plot(n_fit, rt_fit, 'r-', label=f' (R²={r_value ** 2:.4f})', linewidth=2)
             except:
@@ -1425,9 +1421,9 @@ class PPGExperimentGUI:
         self.curve_condition_combo.grid(row=0, column=1, sticky=tk.W, padx=(0, 10), pady=5)
 
         ttk.Label(curve_frame, text="model:").grid(row=0, column=2, sticky=tk.W, padx=(0, 5), pady=5)
-        self.curve_model_var = tk.StringVar(value="logarithmic")
+        self.curve_model_var = tk.StringVar(value="linear")
         curve_model_combo = ttk.Combobox(curve_frame, textvariable=self.curve_model_var,
-                                         values=["logarithmic", "linear"],
+                                         values=["linear", "logarithmic"],
                                          width=15, state="readonly")
         curve_model_combo.grid(row=0, column=3, sticky=tk.W, padx=(0, 10), pady=5)
 
