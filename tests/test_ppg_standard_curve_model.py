@@ -68,21 +68,21 @@ class PPGStandardCurveModelTest(unittest.TestCase):
         self.calculator = PPGIndexCalculator()
         self.calculator.ppg_data["condition1"] = pd.DataFrame(
             {
-                "degree_of_polymerization": [3, 4, 5, 6],
-                "retention_time": [2.0, 3.0, 4.0, 5.0],
+                "聚合度": [3, 4, 5, 6],
+                "保留时间": [2.0, 3.0, 4.0, 5.0],
             }
         )
         self.calculator.ppg_data["condition2"] = pd.DataFrame(
             {
-                "degree_of_polymerization": [3, 4, 5, 6],
-                "retention_time": [4.0, 6.0, 8.0, 10.0],
+                "聚合度": [3, 4, 5, 6],
+                "保留时间": [4.0, 6.0, 8.0, 10.0],
             }
         )
         self.calculator.compound_data["validation_condition1"] = pd.DataFrame(
-            {"compound_name": ["A"], "retention_time": [3.5]}
+            {"化合物名称": ["A"], "保留时间": [3.5]}
         )
         self.calculator.compound_data["validation_condition2"] = pd.DataFrame(
-            {"compound_name": ["A"], "retention_time": [7.2]}
+            {"化合物名称": ["A"], "保留时间": [7.2]}
         )
 
     def test_standard_curve_defaults_to_linear_n_model(self) -> None:
@@ -99,14 +99,14 @@ class PPGStandardCurveModelTest(unittest.TestCase):
         self.calculator.ppg_indices["condition1"] = {
             "indices": {
                 "validation_condition1": pd.DataFrame(
-                    {"compound_name": ["A"], "calculatePPGindex": [450.0]}
+                    {"化合物名称": ["A"], "计算PPG指数": [450.0]}
                 )
             }
         }
         result, _ = self.calculator.convert_ppg_index_to_rt("condition1", "condition2")
         self.assertFalse(result.empty)
         self.assertEqual(self.calculator.standard_curves["condition2"]["model_type"], "linear")
-        self.assertAlmostEqual(float(result.loc[0, "condition2_predicted_RT"]), 7.0)
+        self.assertAlmostEqual(float(result.loc[0, "condition2_预测RT"]), 7.0)
 
 
 if __name__ == "__main__":

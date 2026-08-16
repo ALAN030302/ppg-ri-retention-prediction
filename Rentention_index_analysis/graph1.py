@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-PPG retention index calculation and visualization program - journal-ready complete version
-:
-1. Load retention-time data for PPG standards and compounds
-2. Fit PPG standard curves and calculate linear relationships
-3. Calculate compound PPG retention indices
-4. Compare PPG indices across chromatographic conditions
-5. Convert and validate PPG indices across conditions
-6. comparison of multiple conversion schemes
-7. visualization outputs with English labels, transparent backgrounds, adjustable font sizes, and publication-ready colors
+PPG保留指数计算与可视化分析程序 - 期刊优化完整版
+功能：
+1. 加载PPG标准品和化合物的保留时间数据
+2. 拟合PPG标准曲线并计算线性关系
+3. 计算化合物的PPG保留指数
+4. 比较不同色谱条件下的PPG指数
+5. 跨条件PPG指数转换与验证
+6. 多转换方案比较分析
+7. 可视化分析结果（英文标签、透明背景、可调字号、专业配色）
 
-designed for publication requirements in analytical chemistry and ES&T-style journals
+适用于分析化学、EST等期刊发表要求
 """
 
 import os
@@ -33,8 +33,8 @@ try:
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
     from matplotlib.figure import Figure
 except ImportError as e:
-    print("Error: please install the required libraries first")
-    print("Installation command: pip install pandas numpy scipy matplotlib seaborn")
+    print("错误: 请先安装必要的库")
+    print("安装命令: pip install pandas numpy scipy matplotlib seaborn")
     sys.exit(1)
 
 try:
@@ -43,24 +43,24 @@ try:
     GUI_AVAILABLE = True
 except ImportError:
     GUI_AVAILABLE = False
-    print("Warning: tkinter is not installed, so the GUI is unavailable")
+    print("警告: tkinter未安装，GUI不可用")
 
 # =============================================================================
-# PPGIndexCalculator core calculation class (complete version)
+# PPGIndexCalculator 核心计算类（完整版）
 # =============================================================================
 class PPGIndexCalculator:
-    """Core class for PPG retention index calculation"""
+    """PPG保留指数计算器核心类"""
 
     def __init__(self):
-        self.ppg_data = {} # PPG data under different conditions
-        self.compound_data = {} # compound data
-        self.standard_curves = {} # standard curveParameters
-        self.ppg_indices = {} # calculatePPGindex
-        self.results_summary = {} # result summary
-        self.conversion_results = {} # cross-condition conversion results
+        self.ppg_data = {}               # 不同条件下的PPG数据
+        self.compound_data = {}           # 化合物数据
+        self.standard_curves = {}         # 标准曲线参数
+        self.ppg_indices = {}              # 计算的PPG指数
+        self.results_summary = {}          # 结果汇总
+        self.conversion_results = {}       # 跨条件转换结果
 
     def load_ppg_data(self, file_path: str, condition: str = "default") -> Tuple[bool, str]:
-        """Load PPG standard data"""
+        """加载PPG标准品数据"""
         try:
             file_ext = Path(file_path).suffix.lower()
             if file_ext in ['.xlsx', '.xls']:
@@ -68,12 +68,12 @@ class PPGIndexCalculator:
             elif file_ext == '.csv':
                 df = pd.read_csv(file_path)
             else:
-                return False, f"unsupported file format: {file_ext}"
+                return False, f"不支持的文件格式: {file_ext}"
 
-            # Find required columns
+            # 查找必要的列
             column_mapping = {
-                'degree_of_polymerization': ['degree_of_polymerization', 'n', 'DP', 'degree_of_polymerizationn', 'PPG_n', 'PPG'],
-                'retention_time': ['retention_time', 'RT', 'RetentionTime', 't_R', 'retention_time(RT)', 'rt']
+                '聚合度': ['聚合度', 'n', 'DP', '聚合度n', 'PPG_n', 'PPG'],
+                '保留时间': ['保留时间', 'RT', 'RetentionTime', 't_R', '保留时间(RT)', 'rt']
             }
             rename_dict = {}
             for target_col, possible_names in column_mapping.items():
@@ -84,21 +84,21 @@ class PPGIndexCalculator:
             if rename_dict:
                 df = df.rename(columns=rename_dict)
 
-            if 'degree_of_polymerization' not in df.columns or 'retention_time' not in df.columns:
-                return False, "datafilecolumn ('degree_of_polymerization''retention_time')"
+            if '聚合度' not in df.columns or '保留时间' not in df.columns:
+                return False, "数据文件中缺少必要的列（需要'聚合度'和'保留时间'）"
 
-            df['degree_of_polymerization'] = pd.to_numeric(df['degree_of_polymerization'], errors='coerce')
-            df['retention_time'] = pd.to_numeric(df['retention_time'], errors='coerce')
-            df = df.dropna(subset=['degree_of_polymerization', 'retention_time'])
-            df = df.sort_values('degree_of_polymerization')
+            df['聚合度'] = pd.to_numeric(df['聚合度'], errors='coerce')
+            df['保留时间'] = pd.to_numeric(df['保留时间'], errors='coerce')
+            df = df.dropna(subset=['聚合度', '保留时间'])
+            df = df.sort_values('聚合度')
             self.ppg_data[condition] = df
-            return True, f"load {len(df)} PPG standard data (condition: {condition})"
+            return True, f"成功加载 {len(df)} 个PPG标准品数据（条件: {condition}）"
         except Exception as e:
-            return False, f"loadPPG datafailed: {str(e)}"
+            return False, f"加载PPG数据失败: {str(e)}"
 
     def load_compound_data(self, file_path: str, category: str = "validation",
                            condition: str = "default") -> Tuple[bool, str]:
-        """loadcompound data"""
+        """加载化合物数据"""
         try:
             file_ext = Path(file_path).suffix.lower()
             if file_ext in ['.xlsx', '.xls']:
@@ -106,12 +106,12 @@ class PPGIndexCalculator:
             elif file_ext == '.csv':
                 df = pd.read_csv(file_path)
             else:
-                return False, f"unsupported file format: {file_ext}"
+                return False, f"不支持的文件格式: {file_ext}"
 
             column_mapping = {
-                'compound_name': ['compound_name', 'name', 'compound', 'Name', 'Compound', 'compound'],
-                'retention_time': ['retention_time', 'RT', 'RetentionTime', 't_R', 'retention_time(RT)', 'rt'],
-                'CAS': ['CAS', 'CAS', 'CAS No.', 'CAS']
+                '化合物名称': ['化合物名称', '名称', '化合物', 'Name', 'Compound', '化合物名'],
+                '保留时间': ['保留时间', 'RT', 'RetentionTime', 't_R', '保留时间(RT)', 'rt'],
+                'CAS': ['CAS', 'CAS号', 'CAS No.', 'CAS号']
             }
             rename_dict = {}
             for target_col, possible_names in column_mapping.items():
@@ -122,30 +122,30 @@ class PPGIndexCalculator:
             if rename_dict:
                 df = df.rename(columns=rename_dict)
 
-            if 'compound_name' not in df.columns or 'retention_time' not in df.columns:
-                return False, "datafilecolumn ('compound_name''retention_time')"
+            if '化合物名称' not in df.columns or '保留时间' not in df.columns:
+                return False, "数据文件中缺少必要的列（需要'化合物名称'和'保留时间'）"
 
-            df['retention_time'] = pd.to_numeric(df['retention_time'], errors='coerce')
-            df = df.dropna(subset=['compound_name', 'retention_time'])
+            df['保留时间'] = pd.to_numeric(df['保留时间'], errors='coerce')
+            df = df.dropna(subset=['化合物名称', '保留时间'])
 
             key = f"{category}_{condition}"
             self.compound_data[key] = df
-            return True, f"load {len(df)} compound data (: {category}, condition: {condition})"
+            return True, f"成功加载 {len(df)} 个化合物数据（类别: {category}, 条件: {condition}）"
         except Exception as e:
-            return False, f"loadcompound datafailed: {str(e)}"
+            return False, f"加载化合物数据失败: {str(e)}"
 
     def fit_standard_curve(self, condition: str = "default",
-                           model_type: str = "linear") -> Tuple[bool, str]:
-        """PPGstandard curve"""
+                           model_type: str = "logarithmic") -> Tuple[bool, str]:
+        """拟合PPG标准曲线"""
         try:
             if condition not in self.ppg_data:
-                return False, f"condition {condition} PPG data"
+                return False, f"未找到条件 {condition} 的PPG数据"
             df = self.ppg_data[condition]
             if len(df) < 3:
-                return False, "PPG data, 3standard curve"
+                return False, "PPG数据点不足，至少需要3个点建立标准曲线"
 
-            x = df['degree_of_polymerization'].values
-            y = df['retention_time'].values
+            x = df['聚合度'].values
+            y = df['保留时间'].values
 
             if model_type == "logarithmic":
                 x_fit = np.log(x)
@@ -154,7 +154,7 @@ class PPGIndexCalculator:
                 x_fit = x
                 model_name = "Linear (RT = a + b·n)"
             else:
-                return False, f"model: {model_type}"
+                return False, f"不支持的模型类型: {model_type}"
 
             slope, intercept, r_value, p_value, std_err = stats.linregress(x_fit, y)
             y_pred = intercept + slope * x_fit
@@ -175,29 +175,29 @@ class PPGIndexCalculator:
                 'model_name': model_name,
                 'n_points': len(x)
             }
-            return True, f"standard curve: {model_name}, R² = {r_value ** 2:.4f}"
+            return True, f"标准曲线拟合成功: {model_name}, R² = {r_value ** 2:.4f}"
         except Exception as e:
-            return False, f"standard curvefailed: {str(e)}"
+            return False, f"拟合标准曲线失败: {str(e)}"
 
     def calculate_ppg_index(self, condition: str = "default",
                             method: str = "interpolation") -> Tuple[bool, str]:
-        """calculatePPG retention indices"""
+        """计算PPG保留指数"""
         try:
             if condition not in self.ppg_data:
-                return False, f"condition {condition} PPG data"
+                return False, f"未找到条件 {condition} 的PPG数据"
             df_ppg = self.ppg_data[condition]
 
             if method == "interpolation":
-                ppg_rt = df_ppg['retention_time'].values
-                ppg_n = df_ppg['degree_of_polymerization'].values
+                ppg_rt = df_ppg['保留时间'].values
+                ppg_n = df_ppg['聚合度'].values
                 indices = {}
                 for key in self.compound_data:
                     if condition in key:
                         df_comp = self.compound_data[key]
                         results = []
                         for _, row in df_comp.iterrows():
-                            rt = row['retention_time']
-                            compound_name = row['compound_name']
+                            rt = row['保留时间']
+                            compound_name = row['化合物名称']
                             if rt < ppg_rt[0]:
                                 n_calc = ppg_n[0] - (ppg_rt[0] - rt) / (ppg_rt[1] - ppg_rt[0]) * (ppg_n[1] - ppg_n[0])
                                 if n_calc < 0:
@@ -217,7 +217,7 @@ class PPGIndexCalculator:
                                 n_calc = n_i + (n_j - n_i) * (rt - rt_i) / (rt_j - rt_i)
                                 method_used = "Linear interpolation"
                             ppg_index = n_calc * 100
-                            result = {'compound_name': compound_name, 'retention_time': rt, 'calculatePPGindex': ppg_index, 'calculatemethod': method_used}
+                            result = {'化合物名称': compound_name, '保留时间': rt, '计算PPG指数': ppg_index, '计算方法': method_used}
                             for col in df_comp.columns:
                                 if col not in result:
                                     result[col] = row[col]
@@ -226,9 +226,9 @@ class PPGIndexCalculator:
 
             elif method == "regression":
                 if condition not in self.standard_curves:
-                    success, msg = self.fit_standard_curve(condition, model_type="linear")
+                    success, msg = self.fit_standard_curve(condition, model_type="logarithmic")
                     if not success:
-                        return False, f"Use: {msg}"
+                        return False, f"无法使用回归法: {msg}"
                 curve = self.standard_curves[condition]
                 indices = {}
                 for key in self.compound_data:
@@ -236,8 +236,8 @@ class PPGIndexCalculator:
                         df_comp = self.compound_data[key]
                         results = []
                         for _, row in df_comp.iterrows():
-                            rt = row['retention_time']
-                            compound_name = row['compound_name']
+                            rt = row['保留时间']
+                            compound_name = row['化合物名称']
                             if curve['model_type'] == "logarithmic":
                                 if curve['slope'] != 0:
                                     n_calc = np.exp((rt - curve['intercept']) / curve['slope'])
@@ -249,22 +249,22 @@ class PPGIndexCalculator:
                                 else:
                                     n_calc = np.nan
                             ppg_index = n_calc * 100 if not np.isnan(n_calc) else np.nan
-                            result = {'compound_name': compound_name, 'retention_time': rt, 'calculatePPGindex': ppg_index, 'calculatemethod': "Regression"}
+                            result = {'化合物名称': compound_name, '保留时间': rt, '计算PPG指数': ppg_index, '计算方法': "Regression"}
                             for col in df_comp.columns:
                                 if col not in result:
                                     result[col] = row[col]
                             results.append(result)
                         indices[key] = pd.DataFrame(results)
             else:
-                return False, f"calculatemethod: {method}"
+                return False, f"不支持的计算方法: {method}"
 
             self.ppg_indices[condition] = {'method': method, 'indices': indices}
-            return True, f"PPGindexcalculate (condition: {condition}, method: {method})"
+            return True, f"PPG指数计算完成（条件: {condition}, 方法: {method}）"
         except Exception as e:
-            return False, f"calculatePPGindexfailed: {str(e)}"
+            return False, f"计算PPG指数失败: {str(e)}"
 
     def compare_conditions(self, conditions: List[str]) -> pd.DataFrame:
-        """Compare PPG indices across chromatographic conditions"""
+        """比较不同色谱条件下的PPG指数"""
         comparison_results = []
         for key in self.compound_data:
             if any(cond in key for cond in conditions):
@@ -272,22 +272,22 @@ class PPGIndexCalculator:
                 condition = key.split('_')[1] if '_' in key else "default"
                 df_comp = self.compound_data[key]
                 for _, row in df_comp.iterrows():
-                    compound_name = row['compound_name']
-                    rt = row['retention_time']
-                    compound_data = {'compound_name': compound_name, 'data': category, f'{condition}_RT': rt}
+                    compound_name = row['化合物名称']
+                    rt = row['保留时间']
+                    compound_data = {'化合物名称': compound_name, '数据类别': category, f'{condition}_RT': rt}
                     for cond in conditions:
                         if cond in self.ppg_indices:
                             for data_key, indices_df in self.ppg_indices[cond]['indices'].items():
                                 if cond in data_key:
-                                    match = indices_df[indices_df['compound_name'] == compound_name]
+                                    match = indices_df[indices_df['化合物名称'] == compound_name]
                                     if not match.empty:
-                                        compound_data[f'{cond}_PPGindex'] = match.iloc[0]['calculatePPGindex']
+                                        compound_data[f'{cond}_PPG指数'] = match.iloc[0]['计算PPG指数']
                                         break
                     comparison_results.append(compound_data)
         return pd.DataFrame(comparison_results)
 
     def calculate_conversion_error(self, from_condition: str, to_condition: str) -> pd.DataFrame:
-        """calculatecondition (PPGindex)"""
+        """计算条件转换误差（基于PPG指数）"""
         error_results = []
         if from_condition not in self.ppg_indices or to_condition not in self.ppg_indices:
             return pd.DataFrame()
@@ -296,49 +296,49 @@ class PPGIndexCalculator:
         for key in self.compound_data:
             if from_condition in key:
                 df = self.compound_data[key]
-                compounds_in_both.update(df['compound_name'].tolist())
+                compounds_in_both.update(df['化合物名称'].tolist())
         for key in self.compound_data:
             if to_condition in key:
                 df = self.compound_data[key]
-                compounds_in_both.intersection_update(set(df['compound_name'].tolist()))
+                compounds_in_both.intersection_update(set(df['化合物名称'].tolist()))
 
         for compound in compounds_in_both:
             from_ppg = to_ppg = None
             for key, indices_dict in self.ppg_indices.items():
                 if from_condition in key:
                     for data_key, df_indices in indices_dict['indices'].items():
-                        match = df_indices[df_indices['compound_name'] == compound]
+                        match = df_indices[df_indices['化合物名称'] == compound]
                         if not match.empty:
-                            from_ppg = match.iloc[0]['calculatePPGindex']
+                            from_ppg = match.iloc[0]['计算PPG指数']
                             break
                 if to_condition in key:
                     for data_key, df_indices in indices_dict['indices'].items():
-                        match = df_indices[df_indices['compound_name'] == compound]
+                        match = df_indices[df_indices['化合物名称'] == compound]
                         if not match.empty:
-                            to_ppg = match.iloc[0]['calculatePPGindex']
+                            to_ppg = match.iloc[0]['计算PPG指数']
                             break
             if from_ppg is not None and to_ppg is not None:
                 absolute_error = abs(from_ppg - to_ppg)
                 relative_error = (absolute_error / from_ppg * 100) if from_ppg != 0 else np.inf
                 error_results.append({
-                    'compound_name': compound,
-                    f'{from_condition}_PPGindex': from_ppg,
-                    f'{to_condition}_PPGindex': to_ppg,
-                    '': absolute_error,
-                    '(%)': relative_error
+                    '化合物名称': compound,
+                    f'{from_condition}_PPG指数': from_ppg,
+                    f'{to_condition}_PPG指数': to_ppg,
+                    '绝对误差': absolute_error,
+                    '相对误差(%)': relative_error
                 })
         return pd.DataFrame(error_results)
 
     def convert_ppg_index_to_rt(self, from_condition: str, to_condition: str,
                                 compound_names: List[str] = None) -> Tuple[pd.DataFrame, Union[Dict, str]]:
-        """conditionPPGindexconditionretention_time"""
+        """将源条件下的PPG指数转换为目标条件下的保留时间"""
         try:
             if from_condition not in self.ppg_indices:
-                return pd.DataFrame(), f"condition {from_condition} PPGindexdata"
+                return pd.DataFrame(), f"源条件 {from_condition} 没有PPG指数数据"
             if to_condition not in self.standard_curves:
-                success, msg = self.fit_standard_curve(to_condition, "linear")
+                success, msg = self.fit_standard_curve(to_condition, "logarithmic")
                 if not success:
-                    return pd.DataFrame(), f"condition {to_condition} standard curve: {msg}"
+                    return pd.DataFrame(), f"无法为目标条件 {to_condition} 拟合标准曲线: {msg}"
 
             curve = self.standard_curves[to_condition]
             conversion_results = []
@@ -346,10 +346,10 @@ class PPGIndexCalculator:
             for key, indices_df in self.ppg_indices[from_condition]['indices'].items():
                 if from_condition in key:
                     for _, row in indices_df.iterrows():
-                        compound_name = row['compound_name']
+                        compound_name = row['化合物名称']
                         if compound_names and compound_name not in compound_names:
                             continue
-                        ppg_index = row['calculatePPGindex']
+                        ppg_index = row['计算PPG指数']
                         if pd.isna(ppg_index):
                             continue
                         n_calc = ppg_index / 100
@@ -361,9 +361,9 @@ class PPGIndexCalculator:
                         rt_actual = None
                         for comp_key, comp_df in self.compound_data.items():
                             if to_condition in comp_key:
-                                match = comp_df[comp_df['compound_name'] == compound_name]
-                                if not match.empty and 'retention_time' in match.columns:
-                                    rt_actual = match.iloc[0]['retention_time']
+                                match = comp_df[comp_df['化合物名称'] == compound_name]
+                                if not match.empty and '保留时间' in match.columns:
+                                    rt_actual = match.iloc[0]['保留时间']
                                     break
 
                         if rt_actual is not None:
@@ -374,66 +374,66 @@ class PPGIndexCalculator:
                             relative_error = np.nan
 
                         result = {
-                            'compound_name': compound_name,
-                            f'{from_condition}_PPGindex': ppg_index,
-                            f'{from_condition}_degree_of_polymerization': n_calc,
-                            f'{to_condition}_RT': rt_pred,
-                            f'{to_condition}_RT': rt_actual,
-                            '(min)': absolute_error,
-                            '(%)': relative_error,
-                            'condition': from_condition,
-                            'condition': to_condition
+                            '化合物名称': compound_name,
+                            f'{from_condition}_PPG指数': ppg_index,
+                            f'{from_condition}_聚合度': n_calc,
+                            f'{to_condition}_预测RT': rt_pred,
+                            f'{to_condition}_实际RT': rt_actual,
+                            '绝对误差(min)': absolute_error,
+                            '相对误差(%)': relative_error,
+                            '源条件': from_condition,
+                            '目标条件': to_condition
                         }
                         conversion_results.append(result)
 
             conversion_df = pd.DataFrame(conversion_results)
             if not conversion_df.empty:
-                valid_errors = conversion_df['(min)'].dropna()
+                valid_errors = conversion_df['绝对误差(min)'].dropna()
                 if len(valid_errors) > 0:
                     stats_dict = {
-                        '': valid_errors.mean(),
-                        '': valid_errors.std(),
-                        '': valid_errors.max(),
-                        '': valid_errors.min(),
-                        '': valid_errors.median(),
-                        '': len(valid_errors)
+                        '平均绝对误差': valid_errors.mean(),
+                        '绝对误差标准差': valid_errors.std(),
+                        '最大绝对误差': valid_errors.max(),
+                        '最小绝对误差': valid_errors.min(),
+                        '中位绝对误差': valid_errors.median(),
+                        '样本数': len(valid_errors)
                     }
-                    valid_rel = conversion_df['(%)'].dropna()
+                    valid_rel = conversion_df['相对误差(%)'].dropna()
                     if len(valid_rel) > 0:
                         stats_dict.update({
-                            '(%)': valid_rel.mean(),
-                            '(%)': valid_rel.std(),
-                            '(%)': valid_rel.max(),
-                            '(%)': valid_rel.min()
+                            '平均相对误差(%)': valid_rel.mean(),
+                            '相对误差标准差(%)': valid_rel.std(),
+                            '最大相对误差(%)': valid_rel.max(),
+                            '最小相对误差(%)': valid_rel.min()
                         })
                     return conversion_df, stats_dict
                 else:
-                    return conversion_df, "data"
+                    return conversion_df, "没有有效的误差数据"
             else:
-                return conversion_df, "matchcompound data"
+                return conversion_df, "没有找到匹配的化合物数据"
         except Exception as e:
-            return pd.DataFrame(), f"failed: {str(e)}"
+            return pd.DataFrame(), f"转换失败: {str(e)}"
 
     def cross_condition_analysis(self, from_condition: str, to_condition: str,
                                  threshold: float = 0.5) -> Dict[str, Any]:
-        """conditionanalysis"""
+        """跨条件转换的全面分析"""
         try:
             conversion_df, stats = self.convert_ppg_index_to_rt(from_condition, to_condition)
             if conversion_df.empty:
-                return {"error": "data"}
+                return {"error": "没有转换数据"}
 
             analysis_results = {
-                'condition': from_condition,
-                'condition': to_condition,
-                '': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                'compound': len(conversion_df),
-                '': len(conversion_df['(min)'].dropna()),
-                '': stats if isinstance(stats, dict) else stats,
-                'data': conversion_df.to_dict('records')
+                '源条件': from_condition,
+                '目标条件': to_condition,
+                '转换时间': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                '总化合物数': len(conversion_df),
+                '有效转换数': len(conversion_df['绝对误差(min)'].dropna()),
+                '误差统计': stats if isinstance(stats, dict) else stats,
+                '详细数据': conversion_df.to_dict('records')
             }
 
-            if '(min)' in conversion_df.columns:
-                errors = conversion_df['(min)'].dropna()
+            if '绝对误差(min)' in conversion_df.columns:
+                errors = conversion_df['绝对误差(min)'].dropna()
                 error_bins = [0, 0.1, 0.2, 0.5, 1.0, float('inf')]
                 error_labels = ['<0.1 min', '0.1-0.2 min', '0.2-0.5 min', '0.5-1.0 min', '>1.0 min']
                 error_dist = {}
@@ -444,98 +444,98 @@ class PPGIndexCalculator:
                     else:
                         count = len(errors[(errors >= lower) & (errors < upper)])
                     error_dist[error_labels[i]] = count
-                analysis_results[''] = error_dist
+                analysis_results['误差分布'] = error_dist
 
                 passed = len(errors[errors <= threshold])
                 pass_rate = (passed / len(errors) * 100) if len(errors) > 0 else 0
-                analysis_results['analysis'] = {
-                    '(min)': threshold,
-                    '': passed,
-                    '': len(errors),
-                    '(%)': pass_rate
+                analysis_results['通过率分析'] = {
+                    '阈值(min)': threshold,
+                    '通过数': passed,
+                    '总数': len(errors),
+                    '通过率(%)': pass_rate
                 }
 
             key = f"{from_condition}_to_{to_condition}"
             self.conversion_results[key] = analysis_results
             return analysis_results
         except Exception as e:
-            return {"error": f"analysisfailed: {str(e)}"}
+            return {"error": f"分析失败: {str(e)}"}
 
     def generate_summary_report(self) -> Dict[str, Any]:
-        """analysis"""
+        """生成分析报告摘要"""
         summary = {
-            '': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'PPG datacondition': len(self.ppg_data),
-            'compound data': len(self.compound_data),
-            'standard curve': len(self.standard_curves),
-            'PPGindexcalculateresults': len(self.ppg_indices),
-            'cross-condition conversion results': len(self.conversion_results),
-            'standard curve': {},
-            'PPGindex': {},
-            'condition': {}
+            '生成时间': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'PPG数据条件数': len(self.ppg_data),
+            '化合物数据集数': len(self.compound_data),
+            '标准曲线数': len(self.standard_curves),
+            'PPG指数计算结果数': len(self.ppg_indices),
+            '跨条件转换结果数': len(self.conversion_results),
+            '标准曲线性能': {},
+            'PPG指数统计': {},
+            '跨条件转换统计': {}
         }
 
         for condition, curve in self.standard_curves.items():
-            summary['standard curve'][condition] = {
-                'model': curve['model_type'],
+            summary['标准曲线性能'][condition] = {
+                '模型类型': curve['model_type'],
                 'R²': curve['r_squared'],
-                '': curve['slope'],
-                '': curve['intercept'],
-                '': curve['std_err'],
-                'data': curve['n_points']
+                '斜率': curve['slope'],
+                '截距': curve['intercept'],
+                '标准误差': curve['std_err'],
+                '数据点数': curve['n_points']
             }
 
         for condition, indices_data in self.ppg_indices.items():
             all_indices = []
             for df in indices_data['indices'].values():
-                if 'calculatePPGindex' in df.columns:
-                    all_indices.extend(df['calculatePPGindex'].dropna().tolist())
+                if '计算PPG指数' in df.columns:
+                    all_indices.extend(df['计算PPG指数'].dropna().tolist())
             if all_indices:
                 arr = np.array(all_indices)
-                summary['PPGindex'][condition] = {
-                    'calculatemethod': indices_data['method'],
-                    '': len(all_indices),
-                    '': np.mean(arr),
-                    '': np.std(arr),
-                    '': np.min(arr),
-                    '': np.max(arr),
-                    '': np.median(arr)
+                summary['PPG指数统计'][condition] = {
+                    '计算方法': indices_data['method'],
+                    '样本数': len(all_indices),
+                    '平均值': np.mean(arr),
+                    '标准差': np.std(arr),
+                    '最小值': np.min(arr),
+                    '最大值': np.max(arr),
+                    '中位数': np.median(arr)
                 }
 
         for key, conv in self.conversion_results.items():
-            summary['condition'][key] = {
-                'condition': conv.get('condition', ''),
-                'condition': conv.get('condition', ''),
-                'compound': conv.get('compound', 0),
-                '': conv.get('', 0),
-                '': conv.get('', {}).get('', 0) if isinstance(conv.get(''), dict) else 0,
-                '(%)': conv.get('analysis', {}).get('(%)', 0) if isinstance(conv.get('analysis'), dict) else 0
+            summary['跨条件转换统计'][key] = {
+                '源条件': conv.get('源条件', ''),
+                '目标条件': conv.get('目标条件', ''),
+                '总化合物数': conv.get('总化合物数', 0),
+                '有效转换数': conv.get('有效转换数', 0),
+                '平均绝对误差': conv.get('误差统计', {}).get('平均绝对误差', 0) if isinstance(conv.get('误差统计'), dict) else 0,
+                '通过率(%)': conv.get('通过率分析', {}).get('通过率(%)', 0) if isinstance(conv.get('通过率分析'), dict) else 0
             }
 
         self.results_summary = summary
         return summary
 
     def save_results(self, output_dir: str) -> Tuple[bool, str, List[str]]:
-        """saveresultsfile"""
+        """保存所有结果到文件"""
         try:
             output_path = Path(output_dir)
             output_path.mkdir(parents=True, exist_ok=True)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             saved_files = []
 
-            # 1. standard curve
+            # 1. 标准曲线
             if self.standard_curves:
                 curves_data = []
                 for condition, curve in self.standard_curves.items():
                     curves_data.append({
-                        'chromatographic condition': condition,
-                        'model': curve['model_type'],
-                        '': curve['slope'],
-                        '': curve['intercept'],
+                        '色谱条件': condition,
+                        '模型类型': curve['model_type'],
+                        '斜率': curve['slope'],
+                        '截距': curve['intercept'],
                         'R²': curve['r_squared'],
-                        'p': curve['p_value'],
-                        '': curve['std_err'],
-                        'data': curve['n_points']
+                        'p值': curve['p_value'],
+                        '标准误差': curve['std_err'],
+                        '数据点数': curve['n_points']
                     })
                 curves_df = pd.DataFrame(curves_data)
                 curves_file = output_path / f"PPG_Calibration_Curves_{timestamp}.xlsx"
@@ -543,15 +543,15 @@ class PPGIndexCalculator:
                     curves_df.to_excel(writer, sheet_name='Summary', index=False)
                     for condition, curve in self.standard_curves.items():
                         detail_df = pd.DataFrame({
-                            'degree_of_polymerization': curve['x'],
-                            'RT': curve['y'],
-                            'RT': curve['y_pred'],
-                            '': curve['residuals']
+                            '聚合度': curve['x'],
+                            '实测RT': curve['y'],
+                            '预测RT': curve['y_pred'],
+                            '残差': curve['residuals']
                         })
                         detail_df.to_excel(writer, sheet_name=f'{condition}_details', index=False)
                 saved_files.append(str(curves_file))
 
-            # 2. PPGindex
+            # 2. PPG指数
             if self.ppg_indices:
                 for condition, indices_data in self.ppg_indices.items():
                     indices_file = output_path / f"PPG_Indices_{condition}_{timestamp}.xlsx"
@@ -561,70 +561,70 @@ class PPGIndexCalculator:
                             df.to_excel(writer, sheet_name=sheet_name, index=False)
                     saved_files.append(str(indices_file))
 
-            # 3. condition
+            # 3. 跨条件转换
             if self.conversion_results:
                 conv_file = output_path / f"Conversion_Results_{timestamp}.xlsx"
                 with pd.ExcelWriter(conv_file, engine='openpyxl') as writer:
                     for key, conv in self.conversion_results.items():
-                        if 'data' in conv:
-                            df = pd.DataFrame(conv['data'])
+                        if '详细数据' in conv:
+                            df = pd.DataFrame(conv['详细数据'])
                             sheet_name = key[:30]
                             df.to_excel(writer, sheet_name=sheet_name, index=False)
-                    # translated note
+                    # 统计汇总
                     stats_list = []
                     for key, conv in self.conversion_results.items():
                         s = {
-                            '': key,
-                            'condition': conv.get('condition', ''),
-                            'condition': conv.get('condition', ''),
-                            'compound': conv.get('compound', 0),
-                            '': conv.get('', 0)
+                            '转换方向': key,
+                            '源条件': conv.get('源条件', ''),
+                            '目标条件': conv.get('目标条件', ''),
+                            '总化合物数': conv.get('总化合物数', 0),
+                            '有效转换数': conv.get('有效转换数', 0)
                         }
-                        if isinstance(conv.get(''), dict):
+                        if isinstance(conv.get('误差统计'), dict):
                             s.update({
-                                '(min)': conv[''].get('', 0),
-                                '': conv[''].get('', 0),
-                                '(min)': conv[''].get('', 0)
+                                '平均绝对误差(min)': conv['误差统计'].get('平均绝对误差', 0),
+                                '绝对误差标准差': conv['误差统计'].get('绝对误差标准差', 0),
+                                '最大绝对误差(min)': conv['误差统计'].get('最大绝对误差', 0)
                             })
-                        if isinstance(conv.get('analysis'), dict):
+                        if isinstance(conv.get('通过率分析'), dict):
                             s.update({
-                                '(%)': conv['analysis'].get('(%)', 0),
-                                '': conv['analysis'].get('', 0),
-                                '(min)': conv['analysis'].get('(min)', 0.5)
+                                '通过率(%)': conv['通过率分析'].get('通过率(%)', 0),
+                                '通过数': conv['通过率分析'].get('通过数', 0),
+                                '阈值(min)': conv['通过率分析'].get('阈值(min)', 0.5)
                             })
                         stats_list.append(s)
                     if stats_list:
                         pd.DataFrame(stats_list).to_excel(writer, sheet_name='Conversion_Stats', index=False)
                 saved_files.append(str(conv_file))
 
-            # 4. analysis
+            # 4. 分析报告
             if self.results_summary:
                 report_file = output_path / f"Analysis_Report_{timestamp}.txt"
                 with open(report_file, 'w', encoding='utf-8') as f:
                     f.write("="*70 + "\n")
                     f.write("PPG Retention Index Analysis Report\n")
                     f.write("="*70 + "\n\n")
-                    f.write(f"Generated: {self.results_summary['']}\n\n")
-                    f.write(f"PPG datasets: {self.results_summary['PPG datacondition']}\n")
-                    f.write(f"Compound datasets: {self.results_summary['compound data']}\n")
-                    f.write(f"Calibration curves: {self.results_summary['standard curve']}\n")
-                    f.write(f"PPG index calculations: {self.results_summary['PPGindexcalculateresults']}\n")
-                    f.write(f"Cross‑condition conversions: {self.results_summary['cross-condition conversion results']}\n\n")
-                    if self.results_summary['standard curve']:
+                    f.write(f"Generated: {self.results_summary['生成时间']}\n\n")
+                    f.write(f"PPG datasets: {self.results_summary['PPG数据条件数']}\n")
+                    f.write(f"Compound datasets: {self.results_summary['化合物数据集数']}\n")
+                    f.write(f"Calibration curves: {self.results_summary['标准曲线数']}\n")
+                    f.write(f"PPG index calculations: {self.results_summary['PPG指数计算结果数']}\n")
+                    f.write(f"Cross‑condition conversions: {self.results_summary['跨条件转换结果数']}\n\n")
+                    if self.results_summary['标准曲线性能']:
                         f.write("Calibration curve performance:\n")
-                        for cond, perf in self.results_summary['standard curve'].items():
-                            f.write(f" {cond}: R²={perf['R²']:.4f}, slope={perf['']:.4f}\n")
-                    if self.results_summary['PPGindex']:
+                        for cond, perf in self.results_summary['标准曲线性能'].items():
+                            f.write(f"  {cond}: R²={perf['R²']:.4f}, slope={perf['斜率']:.4f}\n")
+                    if self.results_summary['PPG指数统计']:
                         f.write("\nPPG index statistics:\n")
-                        for cond, stat in self.results_summary['PPGindex'].items():
-                            f.write(f" {cond}: n={stat['']}, mean={stat['']:.2f}, sd={stat['']:.2f}\n")
-                    if self.results_summary['condition']:
+                        for cond, stat in self.results_summary['PPG指数统计'].items():
+                            f.write(f"  {cond}: n={stat['样本数']}, mean={stat['平均值']:.2f}, sd={stat['标准差']:.2f}\n")
+                    if self.results_summary['跨条件转换统计']:
                         f.write("\nConversion statistics:\n")
-                        for key, stat in self.results_summary['condition'].items():
-                            f.write(f" {key}: valid={stat['']}, mean error={stat['']:.3f} min, pass rate={stat['(%)']:.1f}%\n")
+                        for key, stat in self.results_summary['跨条件转换统计'].items():
+                            f.write(f"  {key}: valid={stat['有效转换数']}, mean error={stat['平均绝对误差']:.3f} min, pass rate={stat['通过率(%)']:.1f}%\n")
                 saved_files.append(str(report_file))
 
-            # 5. compound data
+            # 5. 化合物数据汇总
             if self.compound_data:
                 comp_file = output_path / f"Compound_Data_Summary_{timestamp}.xlsx"
                 with pd.ExcelWriter(comp_file, engine='openpyxl') as writer:
@@ -633,21 +633,21 @@ class PPGIndexCalculator:
                         df.to_excel(writer, sheet_name=sheet_name, index=False)
                 saved_files.append(str(comp_file))
 
-            return True, f"resultssave {output_dir}", saved_files
+            return True, f"结果已保存到 {output_dir}", saved_files
         except Exception as e:
-            return False, f"saveresultsfailed: {str(e)}", []
+            return False, f"保存结果失败: {str(e)}", []
 
 # =============================================================================
-# PPGVisualizer ()
+# PPGVisualizer 可视化类（期刊优化版）
 # =============================================================================
 class PPGVisualizer:
-    """PPG data - (, , , )"""
+    """PPG数据可视化类 - 期刊优化版（英文、透明背景、可调字号、专业配色）"""
 
     def __init__(self, calculator: PPGIndexCalculator):
         self.calculator = calculator
         self.figures = {}
 
-        # translated note
+        # 全局样式设置
         plt.rcParams['font.family'] = 'Arial'
         plt.rcParams['axes.unicode_minus'] = False
         plt.rcParams['figure.facecolor'] = 'none'
@@ -657,12 +657,12 @@ class PPGVisualizer:
         plt.rcParams['legend.facecolor'] = 'none'
         plt.rcParams['legend.edgecolor'] = 'none'
 
-        # (ColorBrewer Set2)
+        # 专业配色 (ColorBrewer Set2)
         self.color_set = ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854', '#ffd92f']
 
     def plot_standard_curves(self, conditions: List[str] = None, save_path: str = None,
                               fontsize: int = 12) -> plt.Figure:
-        """PPGstandard curve"""
+        """绘制PPG标准曲线"""
         if conditions is None:
             conditions = list(self.calculator.standard_curves.keys())
         if not conditions:
@@ -684,10 +684,10 @@ class PPGVisualizer:
             row, col = divmod(idx, n_cols)
             ax = axes[row, col]
 
-            # data
+            # 数据点
             ax.scatter(curve['x'], curve['y'], color=self.color_set[0], s=50,
                        label='Measured', zorder=3, edgecolor='white', linewidth=0.5)
-            # translated note
+            # 拟合曲线
             if curve['model_type'] == 'logarithmic':
                 x_range = np.linspace(min(curve['x']), max(curve['x']), 100)
                 y_fit = curve['intercept'] + curve['slope'] * np.log(x_range)
@@ -710,7 +710,7 @@ class PPGVisualizer:
             ax.tick_params(labelsize=fontsize-1)
             ax.grid(True, alpha=0.3, linestyle='--')
 
-        # translated note
+        # 隐藏多余子图
         for idx in range(len(conditions), n_rows * n_cols):
             row, col = divmod(idx, n_cols)
             axes[row, col].set_visible(False)
@@ -723,7 +723,7 @@ class PPGVisualizer:
 
     def plot_residuals(self, conditions: List[str] = None, save_path: str = None,
                        fontsize: int = 12) -> plt.Figure:
-        """"""
+        """残差图"""
         if conditions is None:
             conditions = list(self.calculator.standard_curves.keys())
         if not conditions:
@@ -776,22 +776,22 @@ class PPGVisualizer:
 
     def plot_ppg_index_distribution(self, condition: str, save_path: str = None,
                                      fontsize: int = 12) -> plt.Figure:
-        """PPGindex (+)"""
+        """PPG指数分布图（直方图+箱线图）"""
         if condition not in self.calculator.ppg_indices:
             print(f"Warning: No PPG index data for condition {condition}.")
             return None
 
         all_indices = []
         for df in self.calculator.ppg_indices[condition]['indices'].values():
-            if 'calculatePPGindex' in df.columns:
-                all_indices.extend(df['calculatePPGindex'].dropna().tolist())
+            if '计算PPG指数' in df.columns:
+                all_indices.extend(df['计算PPG指数'].dropna().tolist())
         if not all_indices:
             print("Warning: No valid PPG index values.")
             return None
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
-        # translated note
+        # 直方图
         ax1.hist(all_indices, bins=30, color=self.color_set[0], edgecolor='white', alpha=0.7)
         ax1.axvline(np.mean(all_indices), color='red', linestyle='--', linewidth=2,
                     label=f'Mean: {np.mean(all_indices):.1f}')
@@ -804,7 +804,7 @@ class PPGVisualizer:
         ax1.tick_params(labelsize=fontsize-1)
         ax1.grid(True, alpha=0.3, linestyle='--')
 
-        # translated note
+        # 箱线图
         ax2.boxplot(all_indices, vert=True, patch_artist=True,
                     boxprops=dict(facecolor=self.color_set[1], color='black'),
                     medianprops=dict(color='red', linewidth=2),
@@ -834,7 +834,7 @@ class PPGVisualizer:
 
     def plot_condition_comparison(self, conditions: List[str], save_path: str = None,
                                    fontsize: int = 12) -> plt.Figure:
-        """conditionPPGindexcompare"""
+        """多条件PPG指数比较图"""
         comparison_df = self.calculator.compare_conditions(conditions)
         if comparison_df.empty:
             print("Warning: No data for comparison.")
@@ -843,12 +843,12 @@ class PPGVisualizer:
         fig, axes = plt.subplots(2, 2, figsize=(14, 12))
         axes = axes.flatten()
 
-        # 1. (condition)
+        # 1. 散点图（前两个条件）
         if len(conditions) >= 2:
             ax = axes[0]
             cond1, cond2 = conditions[0], conditions[1]
-            col1 = f"{cond1}_PPGindex"
-            col2 = f"{cond2}_PPGindex"
+            col1 = f"{cond1}_PPG指数"
+            col2 = f"{cond2}_PPG指数"
             if col1 in comparison_df.columns and col2 in comparison_df.columns:
                 data = comparison_df[[col1, col2]].dropna()
                 if not data.empty:
@@ -863,12 +863,12 @@ class PPGVisualizer:
                     ax.tick_params(labelsize=fontsize-1)
                     ax.grid(True, alpha=0.3, linestyle='--')
 
-        # 2. compare
+        # 2. 箱线图比较
         ax = axes[1]
         box_data = []
         labels = []
         for cond in conditions:
-            col = f"{cond}_PPGindex"
+            col = f"{cond}_PPG指数"
             if col in comparison_df.columns:
                 data = comparison_df[col].dropna()
                 if not data.empty:
@@ -884,12 +884,12 @@ class PPGVisualizer:
             ax.tick_params(labelsize=fontsize-1)
             ax.grid(True, alpha=0.3, linestyle='--')
 
-        # 3. (condition)
+        # 3. 误差分布（第一个和第二个条件之间的转换误差）
         ax = axes[2]
         if len(conditions) >= 2:
             error_df = self.calculator.calculate_conversion_error(conditions[0], conditions[1])
-            if not error_df.empty and '(%)' in error_df.columns:
-                errors = error_df['(%)'].dropna()
+            if not error_df.empty and '相对误差(%)' in error_df.columns:
+                errors = error_df['相对误差(%)'].dropna()
                 if not errors.empty:
                     ax.hist(errors, bins=20, color=self.color_set[2], edgecolor='white', alpha=0.7)
                     ax.axvline(np.mean(errors), color='red', linestyle='--', linewidth=2,
@@ -901,12 +901,12 @@ class PPGVisualizer:
                     ax.tick_params(labelsize=fontsize-1)
                     ax.grid(True, alpha=0.3, linestyle='--')
 
-        # 4.
+        # 4. 相关系数热图
         ax = axes[3]
         corr_data = []
         corr_labels = []
         for cond in conditions:
-            col = f"{cond}_PPGindex"
+            col = f"{cond}_PPG指数"
             if col in comparison_df.columns:
                 corr_data.append(comparison_df[col])
                 corr_labels.append(cond)
@@ -927,7 +927,7 @@ class PPGVisualizer:
             ax.set_title('Correlation matrix', fontsize=fontsize+1)
             plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
-        # translated note
+        # 隐藏未用子图
         for i in range(4):
             if not axes[i].has_data():
                 axes[i].set_visible(False)
@@ -940,28 +940,28 @@ class PPGVisualizer:
 
     def plot_conversion_analysis(self, from_condition: str, to_condition: str,
                                   save_path: str = None, fontsize: int = 12) -> plt.Figure:
-        """conditionanalysis"""
+        """跨条件转换详细分析图"""
         try:
             conversion_df, _ = self.calculator.convert_ppg_index_to_rt(from_condition, to_condition)
-            if conversion_df.empty or '(min)' not in conversion_df.columns:
+            if conversion_df.empty or '绝对误差(min)' not in conversion_df.columns:
                 print("Warning: No valid conversion data.")
                 return None
 
-            valid = conversion_df.dropna(subset=['(min)',
-                                                 f'{to_condition}_RT',
-                                                 f'{to_condition}_RT'])
+            valid = conversion_df.dropna(subset=['绝对误差(min)',
+                                                 f'{to_condition}_预测RT',
+                                                 f'{to_condition}_实际RT'])
             if valid.empty:
                 return None
 
             fig, axes = plt.subplots(2, 3, figsize=(18, 12))
             axes = axes.flatten()
 
-            predicted = valid[f'{to_condition}_RT']
-            actual = valid[f'{to_condition}_RT']
-            errors = valid['(min)']
-            rel_errors = valid['(%)'] if '(%)' in valid.columns else None
+            predicted = valid[f'{to_condition}_预测RT']
+            actual = valid[f'{to_condition}_实际RT']
+            errors = valid['绝对误差(min)']
+            rel_errors = valid['相对误差(%)'] if '相对误差(%)' in valid.columns else None
 
-            # 1. vs
+            # 1. 预测 vs 实际
             ax = axes[0]
             ax.scatter(actual, predicted, color=self.color_set[0], s=50, alpha=0.7,
                        edgecolor='white', linewidth=0.5)
@@ -979,7 +979,7 @@ class PPGVisualizer:
             ax.tick_params(labelsize=fontsize-1)
             ax.grid(True, alpha=0.3, linestyle='--')
 
-            # 2.
+            # 2. 绝对误差直方图
             ax = axes[1]
             ax.hist(errors, bins=20, color=self.color_set[2], edgecolor='white', alpha=0.7)
             ax.axvline(errors.mean(), color='red', linestyle='--', linewidth=2,
@@ -999,7 +999,7 @@ class PPGVisualizer:
             ax.tick_params(labelsize=fontsize-1)
             ax.grid(True, alpha=0.3, linestyle='--')
 
-            # 3.
+            # 3. 相对误差直方图
             ax = axes[2]
             if rel_errors is not None and not rel_errors.dropna().empty:
                 rel = rel_errors.dropna()
@@ -1015,7 +1015,7 @@ class PPGVisualizer:
             else:
                 ax.set_visible(False)
 
-            # 4. vs RT
+            # 4. 误差 vs RT
             ax = axes[3]
             ax.scatter(actual, errors, color=self.color_set[4], s=50, alpha=0.7,
                        edgecolor='white', linewidth=0.5)
@@ -1033,14 +1033,14 @@ class PPGVisualizer:
             ax.tick_params(labelsize=fontsize-1)
             ax.grid(True, alpha=0.3, linestyle='--')
 
-            # 5. compound
+            # 5. 误差最大的化合物
             ax = axes[4]
             top_n = min(15, len(valid))
-            top_errors = valid.nlargest(top_n, '(min)')
+            top_errors = valid.nlargest(top_n, '绝对误差(min)')
             y_pos = np.arange(top_n)
-            ax.barh(y_pos, top_errors['(min)'], color=self.color_set[5], edgecolor='white')
+            ax.barh(y_pos, top_errors['绝对误差(min)'], color=self.color_set[5], edgecolor='white')
             names = [name[:20] + '...' if len(name) > 20 else name
-                     for name in top_errors['compound_name']]
+                     for name in top_errors['化合物名称']]
             ax.set_yticks(y_pos)
             ax.set_yticklabels(names, fontsize=fontsize-2)
             ax.invert_yaxis()
@@ -1049,7 +1049,7 @@ class PPGVisualizer:
             ax.tick_params(labelsize=fontsize-1)
             ax.grid(True, alpha=0.3, linestyle='--', axis='x')
 
-            # 6. Bland-Altman
+            # 6. Bland-Altman图
             ax = axes[5]
             mean_vals = (predicted + actual) / 2
             diff = predicted - actual
@@ -1082,14 +1082,14 @@ class PPGVisualizer:
 
     def plot_multiple_conversion_comparison(self, conversions: List[Tuple[str, str]],
                                              save_path: str = None, fontsize: int = 12) -> plt.Figure:
-        """compare"""
+        """多转换方案比较图"""
         try:
             all_errors = []
             labels = []
             for from_cond, to_cond in conversions:
                 df, _ = self.calculator.convert_ppg_index_to_rt(from_cond, to_cond)
-                if not df.empty and '(min)' in df.columns:
-                    err = df['(min)'].dropna()
+                if not df.empty and '绝对误差(min)' in df.columns:
+                    err = df['绝对误差(min)'].dropna()
                     if not err.empty:
                         all_errors.append(err)
                         labels.append(f'{from_cond}→{to_cond}')
@@ -1100,7 +1100,7 @@ class PPGVisualizer:
             fig, axes = plt.subplots(2, 2, figsize=(14, 12))
             axes = axes.flatten()
 
-            # 1. compare
+            # 1. 箱线图比较
             ax = axes[0]
             bp = ax.boxplot(all_errors, labels=labels, patch_artist=True, showfliers=False)
             for patch, color in zip(bp['boxes'], self.color_set[:len(all_errors)]):
@@ -1113,7 +1113,7 @@ class PPGVisualizer:
             for i, err in enumerate(all_errors):
                 ax.text(i+1, err.max()*1.05, f'', ha='center', fontsize=fontsize-2)
 
-            # 2.
+            # 2. 平均误差柱状图
             ax = axes[1]
             means = [e.mean() for e in all_errors]
             stds = [e.std() for e in all_errors]
@@ -1129,7 +1129,7 @@ class PPGVisualizer:
             ax.tick_params(labelsize=fontsize-1)
             ax.grid(True, alpha=0.3, linestyle='--', axis='y')
 
-            # 3. compare
+            # 3. 通过率比较
             ax = axes[2]
             pass_rates = [len(e[e <= 0.5]) / len(e) * 100 for e in all_errors]
             ax.bar(x_pos, pass_rates, color=self.color_set[1], alpha=0.7,
@@ -1144,7 +1144,7 @@ class PPGVisualizer:
             ax.tick_params(labelsize=fontsize-1)
             ax.grid(True, alpha=0.3, linestyle='--', axis='y')
 
-            # 4.
+            # 4. 累积分布
             ax = axes[3]
             for err, label in zip(all_errors, labels):
                 sorted_err = np.sort(err)
@@ -1168,10 +1168,10 @@ class PPGVisualizer:
             return None
 
 # =============================================================================
-# PPGIndexAnalyzerGUI ()
+# PPGIndexAnalyzerGUI 图形界面类（完整版）
 # =============================================================================
 class PPGIndexAnalyzerGUI:
-    """PPG retention indicesanalysisGUI"""
+    """PPG保留指数分析GUI"""
 
     def __init__(self, root):
         self.root = root
@@ -1213,7 +1213,7 @@ class PPGIndexAnalyzerGUI:
                                relief=tk.SUNKEN, anchor=tk.W)
         status_bar.pack(fill=tk.X, pady=(5, 0))
 
-    # ---------- dataload ----------
+    # ---------- 数据加载标签页 ----------
     def setup_data_tab(self):
         data_tab = ttk.Frame(self.notebook)
         self.notebook.add(data_tab, text="Data Loading")
@@ -1221,7 +1221,7 @@ class PPGIndexAnalyzerGUI:
         data_frame = ttk.LabelFrame(data_tab, text="Data Management", padding=15)
         data_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # PPG dataload
+        # PPG数据加载
         ppg_frame = ttk.LabelFrame(data_frame, text="PPG Standard Data", padding=10)
         ppg_frame.pack(fill=tk.X, pady=(0, 15))
 
@@ -1235,7 +1235,7 @@ class PPGIndexAnalyzerGUI:
         ttk.Button(ppg_frame, text="Browse...", command=self.browse_ppg_file).grid(row=1, column=2, padx=5, pady=5)
         ttk.Button(ppg_frame, text="Load PPG Data", command=self.load_ppg_data).grid(row=2, column=0, columnspan=3, pady=10)
 
-        # compound dataload
+        # 化合物数据加载
         comp_frame = ttk.LabelFrame(data_frame, text="Compound Data", padding=10)
         comp_frame.pack(fill=tk.X, pady=(0, 15))
 
@@ -1255,7 +1255,7 @@ class PPGIndexAnalyzerGUI:
         ttk.Button(comp_frame, text="Browse...", command=self.browse_compound_file).grid(row=1, column=4, padx=5, pady=5)
         ttk.Button(comp_frame, text="Load Compound Data", command=self.load_compound_data).grid(row=2, column=0, columnspan=5, pady=10)
 
-        # data
+        # 数据概览树
         overview_frame = ttk.LabelFrame(data_frame, text="Loaded Data Overview", padding=10)
         overview_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
@@ -1278,7 +1278,7 @@ class PPGIndexAnalyzerGUI:
         self.data_status_var = tk.StringVar(value="Waiting for data...")
         ttk.Label(data_frame, textvariable=self.data_status_var).pack(anchor=tk.W)
 
-    # ---------- dataanalysis ----------
+    # ---------- 数据分析标签页 ----------
     def setup_analysis_tab(self):
         analysis_tab = ttk.Frame(self.notebook)
         self.notebook.add(analysis_tab, text="Analysis")
@@ -1286,7 +1286,7 @@ class PPGIndexAnalyzerGUI:
         analysis_frame = ttk.LabelFrame(analysis_tab, text="PPG Index Analysis", padding=15)
         analysis_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # standard curve
+        # 标准曲线拟合
         curve_frame = ttk.LabelFrame(analysis_frame, text="Calibration Curve Fitting", padding=10)
         curve_frame.pack(fill=tk.X, pady=(0, 15))
 
@@ -1297,13 +1297,13 @@ class PPGIndexAnalyzerGUI:
         self.curve_condition_combo.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
 
         ttk.Label(curve_frame, text="Model:").grid(row=0, column=2, sticky=tk.W, padx=5, pady=5)
-        self.model_type_var = tk.StringVar(value="linear")
+        self.model_type_var = tk.StringVar(value="logarithmic")
         ttk.Combobox(curve_frame, textvariable=self.model_type_var,
-                     values=["linear", "logarithmic"], width=15, state="readonly").grid(row=0, column=3, sticky=tk.W, padx=5, pady=5)
+                     values=["logarithmic", "linear"], width=15, state="readonly").grid(row=0, column=3, sticky=tk.W, padx=5, pady=5)
 
         ttk.Button(curve_frame, text="Fit Curve", command=self.fit_standard_curve).grid(row=0, column=4, padx=20, pady=5)
 
-        # PPGindexcalculate
+        # PPG指数计算
         calc_frame = ttk.LabelFrame(analysis_frame, text="PPG Index Calculation", padding=10)
         calc_frame.pack(fill=tk.X, pady=(0, 15))
 
@@ -1320,7 +1320,7 @@ class PPGIndexAnalyzerGUI:
 
         ttk.Button(calc_frame, text="Calculate PPG Indices", command=self.calculate_ppg_index).grid(row=0, column=4, padx=20, pady=5)
 
-        # conditioncompare
+        # 条件比较
         compare_frame = ttk.LabelFrame(analysis_frame, text="Condition Comparison", padding=10)
         compare_frame.pack(fill=tk.X, pady=(0, 15))
 
@@ -1331,7 +1331,7 @@ class PPGIndexAnalyzerGUI:
 
         ttk.Button(compare_frame, text="Compare Selected", command=self.compare_conditions).grid(row=2, column=0, sticky=tk.W, padx=5, pady=10)
 
-        # results
+        # 结果显示
         results_frame = ttk.LabelFrame(analysis_frame, text="Results", padding=10)
         results_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
@@ -1351,7 +1351,7 @@ class PPGIndexAnalyzerGUI:
         self.analysis_status_var = tk.StringVar(value="Ready")
         ttk.Label(analysis_frame, textvariable=self.analysis_status_var).pack(anchor=tk.W)
 
-    # ---------- condition ----------
+    # ---------- 跨条件转换标签页 ----------
     def setup_conversion_tab(self):
         conversion_tab = ttk.Frame(self.notebook)
         self.notebook.add(conversion_tab, text="Cross‑condition Conversion")
@@ -1359,7 +1359,7 @@ class PPGIndexAnalyzerGUI:
         conversion_frame = ttk.LabelFrame(conversion_tab, text="PPG Index Conversion & Validation", padding=15)
         conversion_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # translated note
+        # 转换设置
         settings_frame = ttk.LabelFrame(conversion_frame, text="Settings", padding=10)
         settings_frame.pack(fill=tk.X, pady=(0, 15))
 
@@ -1382,7 +1382,7 @@ class PPGIndexAnalyzerGUI:
         ttk.Button(settings_frame, text="Run Conversion", command=self.perform_conversion_analysis).grid(
             row=0, column=4, rowspan=2, padx=20, pady=5)
 
-        # compare
+        # 多方案比较
         multi_frame = ttk.LabelFrame(settings_frame, text="Multiple Schemes Comparison", padding=5)
         multi_frame.grid(row=2, column=0, columnspan=5, sticky=tk.W, padx=5, pady=10)
 
@@ -1391,7 +1391,7 @@ class PPGIndexAnalyzerGUI:
         self.multi_conversion_frame.grid(row=1, column=0, sticky=tk.W, padx=5, pady=2)
         ttk.Button(multi_frame, text="Compare", command=self.compare_multiple_conversions).grid(row=1, column=1, padx=10, pady=2)
 
-        # results
+        # 转换结果显示
         results_frame = ttk.LabelFrame(conversion_frame, text="Conversion Results", padding=10)
         results_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
 
@@ -1420,7 +1420,7 @@ class PPGIndexAnalyzerGUI:
         self.conversion_status_var = tk.StringVar(value="Ready")
         ttk.Label(conversion_frame, textvariable=self.conversion_status_var).pack(anchor=tk.W)
 
-    # ---------- ()----------
+    # ---------- 可视化标签页（带字号设置）----------
     def setup_visualization_tab(self):
         viz_tab = ttk.Frame(self.notebook)
         self.notebook.add(viz_tab, text="Visualization")
@@ -1480,7 +1480,7 @@ class PPGIndexAnalyzerGUI:
         self.viz_status_var = tk.StringVar(value="Ready")
         ttk.Label(viz_frame, textvariable=self.viz_status_var).pack(anchor=tk.W)
 
-    # ---------- resultsoutput ----------
+    # ---------- 结果输出标签页 ----------
     def setup_results_tab(self):
         results_tab = ttk.Frame(self.notebook)
         self.notebook.add(results_tab, text="Results")
@@ -1512,7 +1512,7 @@ class PPGIndexAnalyzerGUI:
         self.output_status_var = tk.StringVar(value="Ready")
         ttk.Label(results_frame, textvariable=self.output_status_var).pack(anchor=tk.W)
 
-    # ---------- ----------
+    # ---------- 日志标签页 ----------
     def setup_log_tab(self):
         log_tab = ttk.Frame(self.notebook)
         self.notebook.add(log_tab, text="Log")
@@ -1533,7 +1533,7 @@ class PPGIndexAnalyzerGUI:
         ttk.Button(btn_frame, text="Clear Log", command=self.clear_log).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="Save Log", command=self.save_log).pack(side=tk.LEFT, padx=5)
 
-    # ---------- method ----------
+    # ---------- 回调方法 ----------
     def browse_ppg_file(self):
         file_path = filedialog.askopenfilename(title="Select PPG data file",
                                                filetypes=[("Data files", "*.csv *.xlsx *.xls"),
@@ -1717,9 +1717,9 @@ class PPGIndexAnalyzerGUI:
             info = ttk.Frame(frame)
             info.pack(fill=tk.X, padx=5, pady=5)
             ttk.Label(info, text=f"Points: {len(df)}").pack(side=tk.LEFT, padx=10)
-            if 'degree_of_polymerization' in df.columns and 'retention_time' in df.columns:
-                ttk.Label(info, text=f"n range: {df['degree_of_polymerization'].min()} - {df['degree_of_polymerization'].max()}").pack(side=tk.LEFT, padx=10)
-                ttk.Label(info, text=f"RT range: {df['retention_time'].min():.2f} - {df['retention_time'].max():.2f}").pack(side=tk.LEFT, padx=10)
+            if '聚合度' in df.columns and '保留时间' in df.columns:
+                ttk.Label(info, text=f"n range: {df['聚合度'].min()} - {df['聚合度'].max()}").pack(side=tk.LEFT, padx=10)
+                ttk.Label(info, text=f"RT range: {df['保留时间'].min():.2f} - {df['保留时间'].max():.2f}").pack(side=tk.LEFT, padx=10)
 
     def preview_compound_data(self):
         if not self.calculator.compound_data:
@@ -1754,8 +1754,8 @@ class PPGIndexAnalyzerGUI:
             info = ttk.Frame(frame)
             info.pack(fill=tk.X, padx=5, pady=5)
             ttk.Label(info, text=f"Compounds: {len(df)}").pack(side=tk.LEFT, padx=10)
-            if 'retention_time' in df.columns:
-                ttk.Label(info, text=f"RT range: {df['retention_time'].min():.2f} - {df['retention_time'].max():.2f}").pack(side=tk.LEFT, padx=10)
+            if '保留时间' in df.columns:
+                ttk.Label(info, text=f"RT range: {df['保留时间'].min():.2f} - {df['保留时间'].max():.2f}").pack(side=tk.LEFT, padx=10)
 
     def fit_standard_curve(self):
         cond = self.curve_condition_var.get()
@@ -1804,8 +1804,8 @@ class PPGIndexAnalyzerGUI:
             if success and cond in self.calculator.ppg_indices:
                 all_idx = []
                 for df in self.calculator.ppg_indices[cond]['indices'].values():
-                    if 'calculatePPGindex' in df.columns:
-                        all_idx.extend(df['calculatePPGindex'].dropna())
+                    if '计算PPG指数' in df.columns:
+                        all_idx.extend(df['计算PPG指数'].dropna())
                 if all_idx:
                     arr = np.array(all_idx)
                     result = f"PPG index statistics - {cond}:\n"
@@ -1840,7 +1840,7 @@ class PPGIndexAnalyzerGUI:
                 self.root.after(0, lambda: self.analysis_message(f"✓ Comparison done, {len(df)} compounds.", "SUCCESS"))
                 result = f"Comparison results:\n  Conditions: {', '.join(conditions)}\n  Total compounds: {len(df)}\n\n"
                 for cond in conditions:
-                    col = f"{cond}_PPGindex"
+                    col = f"{cond}_PPG指数"
                     if col in df.columns:
                         data = df[col].dropna()
                         if len(data) > 0:
@@ -1849,8 +1849,8 @@ class PPGIndexAnalyzerGUI:
                     corr = {}
                     for i in range(len(conditions)):
                         for j in range(i+1, len(conditions)):
-                            col1 = f"{conditions[i]}_PPGindex"
-                            col2 = f"{conditions[j]}_PPGindex"
+                            col1 = f"{conditions[i]}_PPG指数"
+                            col2 = f"{conditions[j]}_PPG指数"
                             if col1 in df.columns and col2 in df.columns:
                                 pair = df[[col1, col2]].dropna()
                                 if not pair.empty:
@@ -1886,7 +1886,7 @@ class PPGIndexAnalyzerGUI:
                 self.root.after(0, lambda: self.log_message(f"✗ {res['error']}", "ERROR"))
                 return
             self.root.after(0, lambda: self.display_conversion_results(res))
-            self.root.after(0, lambda: self.log_message(f"✓ Conversion {from_cond}→{to_cond} complete. Valid: {res['']}, Mean error: {res[''].get('',0):.3f} min", "SUCCESS"))
+            self.root.after(0, lambda: self.log_message(f"✓ Conversion {from_cond}→{to_cond} complete. Valid: {res['有效转换数']}, Mean error: {res['误差统计'].get('平均绝对误差',0):.3f} min", "SUCCESS"))
             self.root.after(0, lambda: self.conversion_status_var.set("Conversion done"))
         except Exception as e:
             self.root.after(0, lambda: self.log_message(f"✗ Conversion failed: {str(e)}", "ERROR"))
@@ -1898,35 +1898,35 @@ class PPGIndexAnalyzerGUI:
             self.conversion_tree.delete(item)
         self.conversion_stats_text.delete(1.0, tk.END)
 
-        for d in res.get('data', []):
+        for d in res.get('详细数据', []):
             vals = (
-                d['compound_name'],
-                f"{d.get(f'{res["condition"]}_PPGindex',''):.2f}" if isinstance(d.get(f'{res["condition"]}_PPGindex'), (int,float)) else "",
-                f"{d.get(f'{res["condition"]}_RT',''):.3f}" if isinstance(d.get(f'{res["condition"]}_RT'), (int,float)) else "",
-                f"{d.get(f'{res["condition"]}_RT',''):.3f}" if isinstance(d.get(f'{res["condition"]}_RT'), (int,float)) else "",
-                f"{d.get('(min)',''):.3f}" if isinstance(d.get('(min)'), (int,float)) else "",
-                f"{d.get('(%)',''):.2f}" if isinstance(d.get('(%)'), (int,float)) else ""
+                d['化合物名称'],
+                f"{d.get(f'{res["源条件"]}_PPG指数',''):.2f}" if isinstance(d.get(f'{res["源条件"]}_PPG指数'), (int,float)) else "",
+                f"{d.get(f'{res["目标条件"]}_预测RT',''):.3f}" if isinstance(d.get(f'{res["目标条件"]}_预测RT'), (int,float)) else "",
+                f"{d.get(f'{res["目标条件"]}_实际RT',''):.3f}" if isinstance(d.get(f'{res["目标条件"]}_实际RT'), (int,float)) else "",
+                f"{d.get('绝对误差(min)',''):.3f}" if isinstance(d.get('绝对误差(min)'), (int,float)) else "",
+                f"{d.get('相对误差(%)',''):.2f}" if isinstance(d.get('相对误差(%)'), (int,float)) else ""
             )
             self.conversion_tree.insert("", tk.END, values=vals)
 
-        stats = f"Conversion analysis: {res['condition']} → {res['condition']}\n"
+        stats = f"Conversion analysis: {res['源条件']} → {res['目标条件']}\n"
         stats += "="*50 + "\n\n"
-        stats += f"Time: {res['']}\n"
-        stats += f"Total compounds: {res['compound']}\n"
-        stats += f"Valid conversions: {res['']}\n\n"
-        if isinstance(res[''], dict):
+        stats += f"Time: {res['转换时间']}\n"
+        stats += f"Total compounds: {res['总化合物数']}\n"
+        stats += f"Valid conversions: {res['有效转换数']}\n\n"
+        if isinstance(res['误差统计'], dict):
             stats += "Error statistics:\n"
-            for k, v in res[''].items():
+            for k, v in res['误差统计'].items():
                 stats += f"  {k}: {v:.3f}\n" if isinstance(v, float) else f"  {k}: {v}\n"
-        if '' in res:
+        if '误差分布' in res:
             stats += "\nError distribution:\n"
-            total = res['']
-            for bin_name, cnt in res[''].items():
+            total = res['有效转换数']
+            for bin_name, cnt in res['误差分布'].items():
                 pct = (cnt/total*100) if total>0 else 0
                 stats += f"  {bin_name}: {cnt} ({pct:.1f}%)\n"
-        if 'analysis' in res:
-            pa = res['analysis']
-            stats += f"\nPass rate (threshold {pa['(min)']} min): {pa['']}/{pa['']} = {pa['(%)']:.1f}%\n"
+        if '通过率分析' in res:
+            pa = res['通过率分析']
+            stats += f"\nPass rate (threshold {pa['阈值(min)']} min): {pa['通过数']}/{pa['总数']} = {pa['通过率(%)']:.1f}%\n"
         self.conversion_stats_text.insert(tk.END, stats, "INFO")
 
     def compare_multiple_conversions(self):
@@ -1977,17 +1977,17 @@ class PPGIndexAnalyzerGUI:
         try:
             with pd.ExcelWriter(file, engine='openpyxl') as writer:
                 for key, conv in self.calculator.conversion_results.items():
-                    if 'data' in conv:
-                        df = pd.DataFrame(conv['data'])
+                    if '详细数据' in conv:
+                        df = pd.DataFrame(conv['详细数据'])
                         df.to_excel(writer, sheet_name=key[:30], index=False)
                 stats = []
                 for key, conv in self.calculator.conversion_results.items():
-                    s = {'Direction': key, 'Source': conv.get('condition',''), 'Target': conv.get('condition',''),
-                         'Total': conv.get('compound',0), 'Valid': conv.get('',0)}
-                    if isinstance(conv.get(''), dict):
-                        s.update({k:v for k,v in conv[''].items() if isinstance(v,(int,float))})
-                    if isinstance(conv.get('analysis'), dict):
-                        s['Pass rate (%)'] = conv['analysis'].get('(%)',0)
+                    s = {'Direction': key, 'Source': conv.get('源条件',''), 'Target': conv.get('目标条件',''),
+                         'Total': conv.get('总化合物数',0), 'Valid': conv.get('有效转换数',0)}
+                    if isinstance(conv.get('误差统计'), dict):
+                        s.update({k:v for k,v in conv['误差统计'].items() if isinstance(v,(int,float))})
+                    if isinstance(conv.get('通过率分析'), dict):
+                        s['Pass rate (%)'] = conv['通过率分析'].get('通过率(%)',0)
                     stats.append(s)
                 pd.DataFrame(stats).to_excel(writer, sheet_name='Statistics', index=False)
             self.log_message(f"✓ Results exported to {file}", "SUCCESS")
@@ -2182,36 +2182,36 @@ class PPGIndexAnalyzerGUI:
             self.analysis_message("="*60, "INFO")
             self.analysis_message("PPG Retention Index Analysis Report", "INFO")
             self.analysis_message("="*60, "INFO")
-            self.analysis_message(f"Generated: {summary['']}", "INFO")
+            self.analysis_message(f"Generated: {summary['生成时间']}", "INFO")
             self.analysis_message("", "INFO")
-            self.analysis_message(f"PPG datasets: {summary['PPG datacondition']}", "INFO")
-            self.analysis_message(f"Compound datasets: {summary['compound data']}", "INFO")
-            self.analysis_message(f"Calibration curves: {summary['standard curve']}", "INFO")
-            self.analysis_message(f"PPG index calculations: {summary['PPGindexcalculateresults']}", "INFO")
-            self.analysis_message(f"Cross‑condition conversions: {summary['cross-condition conversion results']}", "INFO")
+            self.analysis_message(f"PPG datasets: {summary['PPG数据条件数']}", "INFO")
+            self.analysis_message(f"Compound datasets: {summary['化合物数据集数']}", "INFO")
+            self.analysis_message(f"Calibration curves: {summary['标准曲线数']}", "INFO")
+            self.analysis_message(f"PPG index calculations: {summary['PPG指数计算结果数']}", "INFO")
+            self.analysis_message(f"Cross‑condition conversions: {summary['跨条件转换结果数']}", "INFO")
             self.analysis_message("", "INFO")
-            if summary['standard curve']:
+            if summary['标准曲线性能']:
                 self.analysis_message("Calibration curve performance:", "INFO")
-                for cond, perf in summary['standard curve'].items():
-                    self.analysis_message(f" {cond}: R²={perf['R²']:.4f}, slope={perf['']:.4f}", "INFO")
-            if summary['PPGindex']:
+                for cond, perf in summary['标准曲线性能'].items():
+                    self.analysis_message(f"  {cond}: R²={perf['R²']:.4f}, slope={perf['斜率']:.4f}", "INFO")
+            if summary['PPG指数统计']:
                 self.analysis_message("\nPPG index statistics:", "INFO")
-                for cond, stat in summary['PPGindex'].items():
-                    self.analysis_message(f" {cond}: n={stat['']}, mean={stat['']:.2f}, sd={stat['']:.2f}", "INFO")
-            if summary['condition']:
+                for cond, stat in summary['PPG指数统计'].items():
+                    self.analysis_message(f"  {cond}: n={stat['样本数']}, mean={stat['平均值']:.2f}, sd={stat['标准差']:.2f}", "INFO")
+            if summary['跨条件转换统计']:
                 self.analysis_message("\nConversion statistics:", "INFO")
-                for key, stat in summary['condition'].items():
-                    self.analysis_message(f" {key}: valid={stat['']}, mean error={stat['']:.3f} min, pass rate={stat['(%)']:.1f}%", "INFO")
+                for key, stat in summary['跨条件转换统计'].items():
+                    self.analysis_message(f"  {key}: valid={stat['有效转换数']}, mean error={stat['平均绝对误差']:.3f} min, pass rate={stat['通过率(%)']:.1f}%", "INFO")
             self.analysis_message("\nReport generation complete.", "SUCCESS")
             self.results_text.delete(1.0, tk.END)
             self.results_text.insert(tk.END, "PPG Retention Index Analysis Report\n")
             self.results_text.insert(tk.END, "="*60 + "\n\n")
-            self.results_text.insert(tk.END, f"Generated: {summary['']}\n\n")
-            self.results_text.insert(tk.END, f"PPG datasets: {summary['PPG datacondition']}\n")
-            self.results_text.insert(tk.END, f"Compound datasets: {summary['compound data']}\n")
-            self.results_text.insert(tk.END, f"Calibration curves: {summary['standard curve']}\n")
-            self.results_text.insert(tk.END, f"PPG index calculations: {summary['PPGindexcalculateresults']}\n")
-            self.results_text.insert(tk.END, f"Cross‑condition conversions: {summary['cross-condition conversion results']}\n\n")
+            self.results_text.insert(tk.END, f"Generated: {summary['生成时间']}\n\n")
+            self.results_text.insert(tk.END, f"PPG datasets: {summary['PPG数据条件数']}\n")
+            self.results_text.insert(tk.END, f"Compound datasets: {summary['化合物数据集数']}\n")
+            self.results_text.insert(tk.END, f"Calibration curves: {summary['标准曲线数']}\n")
+            self.results_text.insert(tk.END, f"PPG index calculations: {summary['PPG指数计算结果数']}\n")
+            self.results_text.insert(tk.END, f"Cross‑condition conversions: {summary['跨条件转换结果数']}\n\n")
             self.analysis_status_var.set("Report generated")
         except Exception as e:
             self.analysis_message(f"✗ Report generation failed: {str(e)}", "ERROR")
@@ -2298,7 +2298,7 @@ class PPGIndexAnalyzerGUI:
             self.root.destroy()
 
 # =============================================================================
-# translated note
+# 主函数
 # =============================================================================
 def main():
     print("PPG Retention Index Analyzer - Journal Version")

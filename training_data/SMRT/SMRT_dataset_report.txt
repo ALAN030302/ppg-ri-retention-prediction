@@ -2,7 +2,7 @@ SDFfile
 ==================================================
 : 2026-01-31 11:01:13
 Version: 2.0.0
-outputdirectory: training_data/SMRT
+outputdirectory: C:\Users\Qianlei Yao\Desktop\\SMRT
 output: csv, excel
 calculate:
 translated note

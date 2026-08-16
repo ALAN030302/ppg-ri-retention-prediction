@@ -1,21 +1,18 @@
-# PPG-RI Retention Prediction Supporting Code and Data
+# PPG-RI Retention Prediction Supporting Code, Data, and Models
 
-This repository contains the English-language code, model configuration files, trained model artifacts, processed training/validation data, and analysis scripts supporting the manuscript:
+This repository contains the public supporting package for the manuscript:
 
 > Cross-Platform Retention Time Prediction of Environmental Contaminants: A Polypropylene Glycol Retention Index-Driven Graph Neural Network
 
-The package supports the study workflow for converting chromatographic retention times (RTs) to polypropylene glycol retention indices (PPG-RIs), training and evaluating graph neural network models, comparing RT- and RI-based prediction strategies, and generating model-comparison figures.
+The package provides processed training and validation data, PPG retention-index conversion scripts, figure-generation scripts, and trained Chemprop model artifacts used to support the manuscript analyses.
 
-## Repository Status
+## Version
 
-This package is intended as a reproducibility and peer-review support archive. The code was translated and lightly cleaned for public release. Several scripts remain legacy analysis scripts that were used interactively during the study, so exact reruns may require selecting local input files or adapting paths to the user's environment.
+Current release prepared for manuscript submission: `v1.1.0` (2026-08-16).
 
-Current public record:
+This release updates the previous public package with the revised SI-0624 code/data/model folder. It also adds the same-condition PPG-RI control model and the revised PPG-RI training table used in the final manuscript and Supporting Information.
 
-- GitHub repository: <https://github.com/ALAN030302/ppg-ri-retention-prediction>
-- Versioned GitHub release: `v1.0.0`
-
-## Directory Structure
+## Repository Contents
 
 ```text
 ppg-ri-retention-prediction/
@@ -26,6 +23,7 @@ ppg-ri-retention-prediction/
 ├── LICENSE_NOTICE.md
 ├── environment.yml
 ├── requirements.txt
+├── MODEL_AND_DATA_MANIFEST.md
 ├── Rentention_index_analysis/
 │   ├── analysis_PPGRTI.py
 │   ├── calculate.py
@@ -37,18 +35,22 @@ ppg-ri-retention-prediction/
 │   ├── fig.py
 │   ├── FIG2.py
 │   ├── graph1.py ... graph4.py
+│   ├── redraw_figure4_condition3_reproducible.py
+│   ├── zw_graph3.py
 │   ├── model_graph.py
 │   ├── model_comp_fig.py
 │   ├── chart_settings.json
 │   ├── SDF_Output/
 │   └── analysis_charts/
 ├── models/
-│   ├── model_1/config.toml
-│   ├── model_2/config.toml
-│   ├── model_3/config.toml
-│   └── smrt_model/config.toml
+│   ├── model_1/best.pt
+│   ├── model_2/best.pt
+│   ├── model_3/best.pt
+│   ├── same_condition/best.pt
+│   └── smrt_model/best.pt
 └── training_data/
     ├── SECOND-CLEAN-TRAIN.csv
+    ├── ppg_ri_training.csv
     ├── smrt.csv
     ├── smrt.xlsx
     ├── val_RT.csv
@@ -60,64 +62,53 @@ ppg-ri-retention-prediction/
     └── SMRT/
 ```
 
-Note: the folder name `Rentention_index_analysis` is retained to preserve script paths from the working package.
+Note: the directory name `Rentention_index_analysis` is retained to preserve the script paths used in the working package.
 
-## File Groups
+## Data Files
 
-### `training_data/`
+The processed datasets are stored in `training_data/`.
 
-Processed datasets used for model training, validation, and comparison.
+| File or folder | Records | Description |
+|---|---:|---|
+| `SECOND-CLEAN-TRAIN.csv` | 650,161 | Public/SMRT-derived RT records used for the large public RT baseline. |
+| `SMRT/SMRT_dataset_SMRT_dataset.csv` | 79,955 | Processed SMRT dataset with PubChem CID, RT, SMILES, InChI, formula, molecular descriptors, and metadata. |
+| `smrt.csv` / `smrt.xlsx` | 79,955 | SMRT-derived RT table used for model construction and conversion checks. |
+| `val_RT.csv` / `val_RT.xlsx` | 269 | Laboratory validation RT table. |
+| `val_smrt_RT.csv` / `val_smrt_RT.xlsx` | 277 | Validation compounds represented on the reported SMRT/literature RT scale. |
+| `val_smrt_RI.csv` / `val_smrt_RI.xlsx` | 277 | Validation compounds after PPG-RI conversion. |
+| `ppg_ri_training.csv` | 265 | Revised PPG-RI training table used for the final PPG-RI model workflow. |
 
-| File or folder | Description |
-|---|---|
-| `SECOND-CLEAN-TRAIN.csv` | Large SMRT-derived RT training dataset with SMILES and retention-time values. |
-| `smrt.csv`, `smrt.xlsx` | SMRT-derived RT data converted to minutes. |
-| `val_RT.csv`, `val_RT.xlsx` | Validation compounds with experimentally measured RT values. |
-| `val_smrt_RT.csv`, `val_smrt_RT.xlsx` | Validation compounds represented on the SMRT/literature RT scale. |
-| `val_smrt_RI.csv`, `val_smrt_RI.xlsx` | Validation compounds after conversion to PPG-RI values. |
-| `SMRT/` | Source/processed SMRT dataset files and metadata summaries. |
+See `MODEL_AND_DATA_MANIFEST.md` for a compact machine-readable-style inventory.
 
-Typical columns include:
+## Trained Model Artifacts
 
-| Column | Meaning |
-|---|---|
-| `SMILES` / `smiles` | Molecular structure in SMILES format. |
-| `rt` / `RT` / `Retention Time` | Retention time or retention-index target, depending on the file. |
-| `RETENTION_TIME` | Original SMRT retention-time field. |
+Trained Chemprop model weights are stored as `best.pt` files under `models/`.
 
-### `models/`
-
-Chemprop model configuration files. The public-release configs use repository-relative paths.
-
-| Model folder | Input file | Purpose |
+| Folder | Artifact | Purpose |
 |---|---|---|
-| `model_1/` | `training_data/val_RT.csv` | Experimental RT model. |
-| `model_2/` | `training_data/val_smrt_RT.csv` | SMRT/literature RT model. |
-| `model_3/` | `training_data/val_smrt_RI.csv` | PPG-RI model. |
-| `smrt_model/` | `training_data/SECOND-CLEAN-TRAIN.csv` | Large SMRT-trained baseline model. |
+| `models/model_1/` | `best.pt` | Direct RT model trained with laboratory RT labels. |
+| `models/model_2/` | `best.pt` | Direct RT model trained under the reported SMRT/literature chromatographic condition. |
+| `models/model_3/` | `best.pt` | Cross-condition PPG-RI model. |
+| `models/same_condition/` | `best.pt` | Same-condition PPG-RI control model used for the Supporting Information analysis. |
+| `models/smrt_model/` | `best.pt` | Large public/SMRT-derived RT baseline model. |
 
-### `Rentention_index_analysis/`
+The model artifacts are provided for transparency and reuse. Chemprop and PyTorch version compatibility can affect direct loading; when exact reproduction is required, rebuild the environment from `environment.yml` and `requirements.txt`.
 
-Analysis and figure-generation scripts.
+## Main Script Groups
 
 | Script group | Main files | Purpose |
 |---|---|---|
-| PPG-RI calculation and conversion | `analysis_PPGRTI.py`, `calculate.py`, `trans.py` | PPG calibration, RT-to-RI conversion, cross-condition transfer, and validation summaries. |
-| mzML / peak processing | `MZ.py`, `Peaktaking.py`, `taking.py` | m/z calculation, mzML peak extraction, compound matching, and retention-index preprocessing. |
+| PPG-RI calculation and conversion | `analysis_PPGRTI.py`, `calculate.py`, `trans.py` | PPG calibration, RT-to-RI conversion, RI-to-RT decoding, cross-condition transfer, and validation summaries. |
+| mzML and peak processing | `MZ.py`, `Peaktaking.py`, `taking.py` | m/z calculation, mzML peak extraction, peak matching, and retention-index preprocessing. |
 | Structure conversion | `trans_sdf.py` | Conversion and processing of molecular structure files. |
-| Model comparison and plotting | `fig.py`, `FIG2.py`, `graph1.py` to `graph4.py`, `model_graph.py`, `model_comp_fig.py` | Figure generation and model-comparison visualization. |
-| PubChem helper | `e.py` | Optional PubChem-based metadata retrieval helper. It requires internet access and should be rerun only when external lookup is needed. |
+| Model comparison and plotting | `fig.py`, `FIG2.py`, `graph1.py` to `graph4.py`, `model_graph.py`, `model_comp_fig.py`, `redraw_figure4_condition3_reproducible.py`, `zw_graph3.py` | Figure generation and model-comparison visualization. |
+| PubChem helper | `e.py` | Optional PubChem metadata lookup helper. It requires internet access and should be rerun only when external lookup is needed. |
 
-`analysis_charts/` contains generated chart outputs from previous runs.
+`Rentention_index_analysis/analysis_charts/` contains generated chart outputs from previous runs.
 
 ## Software Environment
 
-The exact package versions used during model training should be recorded from the final author environment if available. The files below provide a practical audit/rerun starting point:
-
-- `environment.yml` for a conda-based environment.
-- `requirements.txt` for pip-installable Python dependencies.
-
-Example setup:
+A practical environment can be created with conda:
 
 ```bash
 conda env create -f environment.yml
@@ -125,61 +116,28 @@ conda activate ppg-ri-retention
 pip install -r requirements.txt
 ```
 
-Chemprop and PyTorch version compatibility can vary. For exact reproduction, use the Chemprop major version used for the final manuscript analysis.
+The package uses common scientific Python packages together with Chemprop, RDKit, PyTorch dependencies installed through Chemprop, and optional LC-MS processing packages such as `pymzml` and `pyopenms`.
 
-## Basic Rerun Workflow
+## Basic Reuse Workflow
 
-### 1. Check the Chemprop configs
+1. Inspect the processed data in `training_data/`.
+2. Load a trained model artifact from `models/<model_name>/best.pt` using a compatible Chemprop/PyTorch environment.
+3. Use `Rentention_index_analysis/analysis_PPGRTI.py` or related scripts to calculate PPG-RIs, convert between RT and RI, and reproduce validation summaries.
+4. Use the plotting scripts in `Rentention_index_analysis/` to regenerate model-comparison figures.
 
-The `models/*/config.toml` files now use repository-relative paths. Confirm the `data-path` and `output-dir` fields before training:
-
-```toml
-data-path = "training_data/val_smrt_RI.csv"
-output-dir = "models/model_3"
-```
-
-### 2. Train or rerun Chemprop models
-
-Example command:
-
-```bash
-chemprop train --config-path models/model_3/config.toml
-```
-
-Repeat for `model_1`, `model_2`, `model_3`, and `smrt_model` as needed.
-
-### 3. Run PPG-RI analysis scripts
-
-Some scripts are interactive and may open a file-picker window. Select inputs from `training_data/` or from the processed workbook generated by the preceding step.
-
-Typical entry points:
-
-```bash
-python Rentention_index_analysis/analysis_PPGRTI.py
-python Rentention_index_analysis/calculate.py
-python Rentention_index_analysis/trans.py
-```
-
-### 4. Generate comparison figures
-
-```bash
-python Rentention_index_analysis/fig.py
-python Rentention_index_analysis/model_comp_fig.py
-python Rentention_index_analysis/graph1.py
-python Rentention_index_analysis/graph2.py
-python Rentention_index_analysis/graph3.py
-python Rentention_index_analysis/graph4.py
-```
-
-Generated plots may be written to `Rentention_index_analysis/analysis_charts/` or to a path specified inside each script.
+Some scripts were originally used as analysis notebooks/scripts during manuscript preparation and may require local path selection or minor path adaptation for independent reruns.
 
 ## Reproducibility Notes
 
-- The package contains processed data, model configurations, trained model artifacts, and analysis scripts used to support the manuscript.
-- Some scripts are exploratory or figure-specific rather than a single automated pipeline.
-- Some helper scripts require local intermediate files that are not part of the final manuscript dataset.
-- Keep raw, processed, and figure-source data separate in any future repository expansion.
+- This repository is a reproducibility and peer-review support archive, not a polished software package.
+- Several scripts are figure-specific or exploratory.
+- Processed third-party/public datasets are included only to support the reported analysis. Users should cite the original data sources where applicable.
+- Raw proprietary instrument files are not included unless explicitly listed in the manuscript or Supporting Information.
+
+## Citation
+
+If you use this package, cite the associated manuscript and this repository release. See `CITATION.cff`.
 
 ## Contact
 
-For questions about the manuscript and data package, contact the corresponding authors listed in the manuscript.
+For questions about the manuscript, data package, or model artifacts, contact the corresponding authors listed in the manuscript.

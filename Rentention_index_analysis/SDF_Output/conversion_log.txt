@@ -1,5 +1,5 @@
-translated note
+
 ============================================================
-: 2026-01-31 11:01:13
-outputdirectory: training_data/SMRT
-SMRT_dataset.sdf: (79955/79955)
+转换时间: 2026-01-31 11:01:13
+输出目录: C:\Users\姚钱磊\Desktop\补充实验预测\SMRT
+SMRT_dataset.sdf: 成功 (79955/79955)

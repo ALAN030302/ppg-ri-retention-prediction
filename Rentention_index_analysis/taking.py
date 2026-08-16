@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-mzML peak extraction and compound matching program
-:
-1. Extract peak data from mzML files
-2. Load compound m/z information from Excel tables
-3. Match peak data by compound m/z
-4. Save matching results to a new Excel table
-Author: Qianlei Yao
-Version: 7.0
-Date: 2025
+mzML文件峰提取与化合物匹配程序
+功能：
+1. 从mzML文件提取峰数据
+2. 从Excel表格加载化合物m/z信息
+3. 根据化合物m/z匹配峰数据
+4. 将匹配结果保存到新的Excel表格
+作者: 姚钱磊
+版本: 7.0
+日期: 2025
 """
 
 import os
@@ -25,18 +25,18 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any, Union
 import warnings
 
-# Suppress warnings
+# 抑制警告
 warnings.filterwarnings('ignore')
 
 try:
     import pandas as pd
     import numpy as np
 except ImportError:
-    print("Error: please install pandas and numpy first")
-    print("Installation command: pip install pandas numpy")
+    print("错误: 请先安装 pandas 和 numpy")
+    print("安装命令: pip install pandas numpy")
     sys.exit(1)
 
-# Try to import GUI libraries
+# 尝试导入GUI库
 try:
     import tkinter as tk
     from tkinter import ttk, filedialog, messagebox, scrolledtext
@@ -44,49 +44,49 @@ try:
     GUI_AVAILABLE = True
 except ImportError:
     GUI_AVAILABLE = False
-    print("Warning: tkinter is not installed, so the GUI is unavailable")
+    print("警告: tkinter未安装，GUI不可用")
 
 
 class CompoundMatcher:
-    """compound matching - Excelloadcompoundmatch"""
+    """化合物匹配器 - 从Excel加载化合物信息并进行匹配"""
 
     def __init__(self):
-        """match"""
+        """初始化匹配器"""
         self.compounds_df = None
         self.match_results = []
         self.match_settings = {
-            'ppm_tolerance': 10, # ppm
-            'rt_window': 30, # retention_time ()
-            'intensity_threshold': 1000 #
+            'ppm_tolerance': 10,  # ppm误差
+            'rt_window': 30,  # 保留时间窗口（秒）
+            'intensity_threshold': 1000  # 强度阈值
         }
 
     def load_compounds_from_excel(self, excel_file: str) -> Tuple[bool, str, pd.DataFrame]:
-        """Excelfileloadcompound"""
+        """从Excel文件加载化合物信息"""
         try:
             file_path = Path(excel_file)
 
             if not file_path.exists():
-                return False, "file does not exist", None
+                return False, "文件不存在", None
 
-            # Try to read the Excel file
+            # 尝试读取Excel文件
             try:
-                # Try all possible worksheets
+                # 尝试所有可能的sheet
                 xls = pd.ExcelFile(file_path)
                 sheet_names = xls.sheet_names
 
-                # Try the first worksheet
+                # 尝试第一个sheet
                 df = pd.read_excel(file_path, sheet_name=sheet_names[0])
 
-                # Find required columns
-                mz_col = self._find_column(df, ['mz', 'M/Z', 'm/z', 'mass', 'Mass', 'MZ', ''])
-                name_col = self._find_column(df, ['name', 'Name', 'compound', 'Compound', 'ID', 'name', 'compound_name'])
-                formula_col = self._find_column(df, ['formula', 'Formula', 'molecular_formula'])
-                rt_col = self._find_column(df, ['rt', 'RT', 'retention_time', 'retention_time'])
+                # 查找必要的列
+                mz_col = self._find_column(df, ['mz', 'M/Z', 'm/z', 'mass', 'Mass', 'MZ', '质荷比'])
+                name_col = self._find_column(df, ['name', 'Name', 'compound', 'Compound', 'ID', '名称', '化合物名称'])
+                formula_col = self._find_column(df, ['formula', 'Formula', '分子式'])
+                rt_col = self._find_column(df, ['rt', 'RT', '保留时间', 'retention_time'])
 
                 if mz_col is None:
-                    return False, "m/zcolumn, Excelfilem/z", None
+                    return False, "未找到m/z列，请确保Excel文件包含m/z信息", None
 
-                # column
+                # 重命名列
                 rename_dict = {}
                 if mz_col:
                     rename_dict[mz_col] = 'mz'
@@ -100,28 +100,28 @@ class CompoundMatcher:
                 if rename_dict:
                     df = df.rename(columns=rename_dict)
 
-                # column
+                # 确保必要的列存在
                 if 'name' not in df.columns:
-                    df['name'] = [f"compound_{i + 1}" for i in range(len(df))]
+                    df['name'] = [f"化合物_{i + 1}" for i in range(len(df))]
 
-                # m/zcolumn
+                # 确保m/z列是数值
                 if 'mz' in df.columns:
                     df['mz'] = pd.to_numeric(df['mz'], errors='coerce')
-                    # m/zNaN
+                    # 删除m/z为NaN的行
                     df = df.dropna(subset=['mz'])
 
                 self.compounds_df = df
 
-                return True, f"load {len(df)} compound", df
+                return True, f"成功加载 {len(df)} 个化合物", df
 
             except Exception as e:
-                return False, f"Read Excel filefailed: {str(e)}", None
+                return False, f"读取Excel文件失败: {str(e)}", None
 
         except Exception as e:
-            return False, f"loadcompoundfailed: {str(e)}", None
+            return False, f"加载化合物信息失败: {str(e)}", None
 
     def _find_column(self, df: pd.DataFrame, possible_names: List[str]) -> Optional[str]:
-        """DataFramecolumn"""
+        """在DataFrame中查找可能的列名"""
         for name in possible_names:
             if name in df.columns:
                 return name
@@ -129,7 +129,7 @@ class CompoundMatcher:
 
     def set_match_settings(self, ppm_tolerance: float = 10, rt_window: float = 30,
                            intensity_threshold: float = 1000):
-        """matchParameters"""
+        """设置匹配参数"""
         self.match_settings = {
             'ppm_tolerance': ppm_tolerance,
             'rt_window': rt_window,
@@ -137,33 +137,33 @@ class CompoundMatcher:
         }
 
     def match_compounds(self, peaks_data: Union[List[Dict], pd.DataFrame, str]) -> Tuple[bool, str]:
-        """matchcompoundpeakdata"""
+        """匹配化合物和峰数据"""
         try:
-            # compound data
+            # 检查是否有化合物数据
             if self.compounds_df is None or len(self.compounds_df) == 0:
-                return False, "loadcompound"
+                return False, "未加载化合物信息"
 
-            # peakdataDataFrame
+            # 转换峰数据为DataFrame
             if isinstance(peaks_data, str):
-                # filepath
+                # 文件路径
                 peaks_df = pd.read_csv(peaks_data)
             elif isinstance(peaks_data, pd.DataFrame):
                 peaks_df = peaks_data
             elif isinstance(peaks_data, list):
                 peaks_df = pd.DataFrame(peaks_data)
             else:
-                return False, "peakdata"
+                return False, "不支持的峰数据类型"
 
-            # peakdatacolumn
-            required_columns = ['(m/z)', 'retention_time(RT)', '']
+            # 检查峰数据是否包含必要列
+            required_columns = ['质荷比(m/z)', '保留时间(RT)', '强度']
             missing_cols = [col for col in required_columns if col not in peaks_df.columns]
 
             if missing_cols:
-                # column
+                # 尝试查找其他可能的列名
                 column_mapping = {
-                    '(m/z)': ['mz', 'M/Z', 'm/z'],
-                    'retention_time(RT)': ['rt', 'RT', 'retention_time'],
-                    '': ['intensity', 'Intensity', '']
+                    '质荷比(m/z)': ['mz', 'M/Z', 'm/z'],
+                    '保留时间(RT)': ['rt', 'RT', '保留时间'],
+                    '强度': ['intensity', 'Intensity', '强度']
                 }
 
                 for req_col, possible_names in column_mapping.items():
@@ -173,199 +173,199 @@ class CompoundMatcher:
                                 peaks_df = peaks_df.rename(columns={name: req_col})
                                 break
 
-            # translated note
+            # 再次检查
             missing_cols = [col for col in required_columns if col not in peaks_df.columns]
             if missing_cols:
-                return False, f"peakdatacolumn: {', '.join(missing_cols)}"
+                return False, f"峰数据缺少必要列: {', '.join(missing_cols)}"
 
-            # data
-            peaks_df['(m/z)'] = pd.to_numeric(peaks_df['(m/z)'], errors='coerce')
-            peaks_df['retention_time(RT)'] = pd.to_numeric(peaks_df['retention_time(RT)'], errors='coerce')
-            peaks_df[''] = pd.to_numeric(peaks_df[''], errors='coerce')
+            # 确保数据类型正确
+            peaks_df['质荷比(m/z)'] = pd.to_numeric(peaks_df['质荷比(m/z)'], errors='coerce')
+            peaks_df['保留时间(RT)'] = pd.to_numeric(peaks_df['保留时间(RT)'], errors='coerce')
+            peaks_df['强度'] = pd.to_numeric(peaks_df['强度'], errors='coerce')
 
-            # peak
-            peaks_df = peaks_df[peaks_df[''] >= self.match_settings['intensity_threshold']]
+            # 过滤低于阈值的峰
+            peaks_df = peaks_df[peaks_df['强度'] >= self.match_settings['intensity_threshold']]
 
             self.match_results = []
 
-            # compoundmatch
+            # 对每个化合物进行匹配
             for _, compound in self.compounds_df.iterrows():
                 compound_mz = compound.get('mz')
-                compound_name = compound.get('name', 'compound')
+                compound_name = compound.get('name', '未知化合物')
                 formula = compound.get('formula', '')
                 rt_reference = compound.get('rt_reference', None)
 
                 if pd.isna(compound_mz):
                     continue
 
-                # calculateppm
+                # 计算ppm误差
                 ppm_tolerance = self.match_settings['ppm_tolerance']
                 mz_tolerance = compound_mz * ppm_tolerance / 1e6
 
-                # matchpeak
+                # 查找匹配的峰
                 matching_peaks = peaks_df[
-                    (peaks_df['(m/z)'] >= compound_mz - mz_tolerance) &
-                    (peaks_df['(m/z)'] <= compound_mz + mz_tolerance)
+                    (peaks_df['质荷比(m/z)'] >= compound_mz - mz_tolerance) &
+                    (peaks_df['质荷比(m/z)'] <= compound_mz + mz_tolerance)
                     ].copy()
 
-                # retention_time,
+                # 如果有参考保留时间，进一步筛选
                 if rt_reference is not None and not pd.isna(rt_reference):
                     rt_window = self.match_settings['rt_window']
                     matching_peaks = matching_peaks[
-                        (matching_peaks['retention_time(RT)'] >= rt_reference - rt_window) &
-                        (matching_peaks['retention_time(RT)'] <= rt_reference + rt_window)
+                        (matching_peaks['保留时间(RT)'] >= rt_reference - rt_window) &
+                        (matching_peaks['保留时间(RT)'] <= rt_reference + rt_window)
                         ]
 
                 if len(matching_peaks) > 0:
-                    # peak
-                    matching_peaks['mz_difference'] = abs(matching_peaks['(m/z)'] - compound_mz)
+                    # 选择最接近的峰
+                    matching_peaks['mz_difference'] = abs(matching_peaks['质荷比(m/z)'] - compound_mz)
                     matching_peaks['mz_difference_ppm'] = matching_peaks['mz_difference'] / compound_mz * 1e6
 
-                    # m/z
+                    # 按m/z误差排序
                     matching_peaks = matching_peaks.sort_values('mz_difference')
 
                     for i, (_, peak) in enumerate(matching_peaks.iterrows()):
-                        if i >= 3: # 3match
+                        if i >= 3:  # 只取前3个最接近的匹配
                             break
 
                         result = {
-                            'compound_name': compound_name,
-                            'molecular_formula': formula,
-                            'm/z': compound_mz,
-                            'm/z': peak['(m/z)'],
-                            'm/z(Da)': peak['mz_difference'],
-                            'm/z(ppm)': peak['mz_difference_ppm'],
-                            'retention_time(RT)': peak['retention_time(RT)'],
-                            '': peak[''],
-                            'match_status': 'match',
-                            'match_rank': i + 1
+                            '化合物名称': compound_name,
+                            '分子式': formula,
+                            '理论m/z': compound_mz,
+                            '实测m/z': peak['质荷比(m/z)'],
+                            'm/z误差(Da)': peak['mz_difference'],
+                            'm/z误差(ppm)': peak['mz_difference_ppm'],
+                            '保留时间(RT)': peak['保留时间(RT)'],
+                            '强度': peak['强度'],
+                            '匹配状态': '匹配成功',
+                            '匹配排名': i + 1
                         }
 
-                        # retention_time
+                        # 添加参考保留时间信息
                         if rt_reference is not None and not pd.isna(rt_reference):
-                            result['RT'] = rt_reference
-                            result['RT'] = abs(peak['retention_time(RT)'] - rt_reference)
+                            result['参考RT'] = rt_reference
+                            result['RT误差'] = abs(peak['保留时间(RT)'] - rt_reference)
 
                         self.match_results.append(result)
                 else:
-                    # match
+                    # 未找到匹配
                     result = {
-                        'compound_name': compound_name,
-                        'molecular_formula': formula,
-                        'm/z': compound_mz,
-                        'm/z': None,
-                        'm/z(Da)': None,
-                        'm/z(ppm)': None,
-                        'retention_time(RT)': None,
-                        '': None,
-                        'match_status': 'unmatched',
-                        'match_rank': None
+                        '化合物名称': compound_name,
+                        '分子式': formula,
+                        '理论m/z': compound_mz,
+                        '实测m/z': None,
+                        'm/z误差(Da)': None,
+                        'm/z误差(ppm)': None,
+                        '保留时间(RT)': None,
+                        '强度': None,
+                        '匹配状态': '未匹配',
+                        '匹配排名': None
                     }
 
                     if rt_reference is not None and not pd.isna(rt_reference):
-                        result['RT'] = rt_reference
+                        result['参考RT'] = rt_reference
 
                     self.match_results.append(result)
 
             if len(self.match_results) == 0:
-                return False, "match"
+                return False, "未找到任何匹配"
 
-            return True, f"match: {len(self.compounds_df)} compound, {len([r for r in self.match_results if r['match_status'] == 'match'])} match"
+            return True, f"匹配完成: 共处理 {len(self.compounds_df)} 个化合物，找到 {len([r for r in self.match_results if r['匹配状态'] == '匹配成功'])} 个匹配"
 
         except Exception as e:
-            return False, f"match: {str(e)}"
+            return False, f"匹配过程中出错: {str(e)}"
 
-    def save_match_results(self, output_dir: str, base_name: str = "compound matchingresults") -> Tuple[bool, str, List[str]]:
-        """savematching resultsExcelfile"""
+    def save_match_results(self, output_dir: str, base_name: str = "化合物匹配结果") -> Tuple[bool, str, List[str]]:
+        """保存匹配结果到Excel文件"""
         try:
             if not self.match_results:
-                return False, "matching resultssave", []
+                return False, "没有匹配结果可保存", []
 
             output_path = Path(output_dir)
             output_path.mkdir(parents=True, exist_ok=True)
 
             saved_files = []
 
-            # DataFrame
+            # 创建DataFrame
             results_df = pd.DataFrame(self.match_results)
 
-            # saveExcel
+            # 保存为Excel
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-            # resultsfile
+            # 主结果文件
             excel_file = output_path / f"{base_name}_{timestamp}.xlsx"
 
             with pd.ExcelWriter(excel_file, engine='openpyxl') as writer:
-                # results
-                results_df.to_excel(writer, sheet_name='all matching results', index=False)
+                # 所有结果
+                results_df.to_excel(writer, sheet_name='所有匹配结果', index=False)
 
-                # successful matchesresults
-                successful_matches = results_df[results_df['match_status'] == 'match'].copy()
+                # 成功匹配的结果
+                successful_matches = results_df[results_df['匹配状态'] == '匹配成功'].copy()
                 if len(successful_matches) > 0:
-                    successful_matches = successful_matches.sort_values(['compound_name', 'match_rank'])
-                    successful_matches.to_excel(writer, sheet_name='successful matches', index=False)
+                    successful_matches = successful_matches.sort_values(['化合物名称', '匹配排名'])
+                    successful_matches.to_excel(writer, sheet_name='成功匹配', index=False)
 
-                # compound
+                # 按化合物汇总
                 compound_summary = []
-                for compound_name in results_df['compound_name'].unique():
-                    compound_matches = results_df[results_df['compound_name'] == compound_name]
-                    successful = compound_matches[compound_matches['match_status'] == 'match']
+                for compound_name in results_df['化合物名称'].unique():
+                    compound_matches = results_df[results_df['化合物名称'] == compound_name]
+                    successful = compound_matches[compound_matches['匹配状态'] == '匹配成功']
 
                     summary = {
-                        'compound_name': compound_name,
-                        'match': len(successful),
-                        'm/z(ppm)': successful['m/z(ppm)'].min() if len(successful) > 0 else None,
-                        '': successful[''].max() if len(successful) > 0 else None,
-                        'RT': successful['retention_time(RT)'].mean() if len(successful) > 0 else None,
-                        'match_status': 'match' if len(successful) > 0 else 'unmatched'
+                        '化合物名称': compound_name,
+                        '总匹配次数': len(successful),
+                        '最佳m/z误差(ppm)': successful['m/z误差(ppm)'].min() if len(successful) > 0 else None,
+                        '最高强度': successful['强度'].max() if len(successful) > 0 else None,
+                        '平均RT': successful['保留时间(RT)'].mean() if len(successful) > 0 else None,
+                        '匹配状态': '已匹配' if len(successful) > 0 else '未匹配'
                     }
 
                     compound_summary.append(summary)
 
                 summary_df = pd.DataFrame(compound_summary)
-                summary_df.to_excel(writer, sheet_name='compound', index=False)
+                summary_df.to_excel(writer, sheet_name='化合物汇总', index=False)
 
-                # translated note
+                # 统计信息
                 stats = {
-                    '': ['compound', 'successful matches', 'unmatched', 'matchpeak',
-                                 'm/z(ppm)', 'm/z(ppm)', 'm/z(ppm)'],
-                    '': [
-                        len(results_df['compound_name'].unique()),
-                        len(results_df[results_df['match_status'] == 'match']['compound_name'].unique()),
-                        len(results_df[results_df['match_status'] == 'unmatched']['compound_name'].unique()),
-                        len(results_df[results_df['match_status'] == 'match']),
-                        results_df['m/z(ppm)'].mean() if 'm/z(ppm)' in results_df.columns else 0,
-                        results_df['m/z(ppm)'].min() if 'm/z(ppm)' in results_df.columns else 0,
-                        results_df['m/z(ppm)'].max() if 'm/z(ppm)' in results_df.columns else 0
+                    '统计项目': ['化合物总数', '成功匹配数', '未匹配数', '总匹配峰数',
+                                 '平均m/z误差(ppm)', '最小m/z误差(ppm)', '最大m/z误差(ppm)'],
+                    '数值': [
+                        len(results_df['化合物名称'].unique()),
+                        len(results_df[results_df['匹配状态'] == '匹配成功']['化合物名称'].unique()),
+                        len(results_df[results_df['匹配状态'] == '未匹配']['化合物名称'].unique()),
+                        len(results_df[results_df['匹配状态'] == '匹配成功']),
+                        results_df['m/z误差(ppm)'].mean() if 'm/z误差(ppm)' in results_df.columns else 0,
+                        results_df['m/z误差(ppm)'].min() if 'm/z误差(ppm)' in results_df.columns else 0,
+                        results_df['m/z误差(ppm)'].max() if 'm/z误差(ppm)' in results_df.columns else 0
                     ]
                 }
                 stats_df = pd.DataFrame(stats)
-                stats_df.to_excel(writer, sheet_name='', index=False)
+                stats_df.to_excel(writer, sheet_name='统计信息', index=False)
 
             saved_files.append(str(excel_file))
 
-            # Save as CSV (Use)
+            # 保存为CSV（便于其他软件使用）
             csv_file = output_path / f"{base_name}_{timestamp}.csv"
             results_df.to_csv(csv_file, index=False, encoding='utf-8-sig')
             saved_files.append(str(csv_file))
 
-            return True, f"resultssave {excel_file.name}", saved_files
+            return True, f"结果已保存到 {excel_file.name}", saved_files
 
         except Exception as e:
-            return False, f"saveresultsfailed: {str(e)}", []
+            return False, f"保存结果失败: {str(e)}", []
 
 
 class MzMLPeakExtractor:
-    """mzMLpeak - peakdatacompound matching"""
+    """mzML峰提取器 - 提取峰数据供化合物匹配"""
 
     def __init__(self, progress_callback=None, log_callback=None):
-        """"""
+        """初始化提取器"""
         self.progress_callback = progress_callback
         self.log_callback = log_callback
         self.cancel_requested = False
 
     def log(self, message: str, level: str = "INFO"):
-        """Record log messages"""
+        """记录日志"""
         timestamp = datetime.now().strftime("%H:%M:%S")
         log_message = f"[{timestamp}] {message}"
 
@@ -375,17 +375,17 @@ class MzMLPeakExtractor:
             print(log_message)
 
     def update_progress(self, value: int, message: str = ""):
-        """Update progress"""
+        """更新进度"""
         if self.progress_callback:
             self.progress_callback(value, message)
 
     def extract_peaks_with_pymzml(self, mzml_path: str, intensity_threshold: float = 1000) -> Tuple[
         Optional[List[Dict]], str]:
-        """UsepymzMLpeakdata"""
+        """使用pymzML提取峰数据"""
         try:
             import pymzml
 
-            self.log(f"UsepymzMLloadfile: {Path(mzml_path).name}")
+            self.log(f"使用pymzML加载文件: {Path(mzml_path).name}")
             peaks = []
 
             run = pymzml.run.Reader(mzml_path)
@@ -393,7 +393,7 @@ class MzMLPeakExtractor:
 
             for spectrum in run:
                 if self.cancel_requested:
-                    return None, "user cancelled the operation"
+                    return None, "用户取消操作"
 
                 if spectrum.ms_level == 1:
                     mz_array = spectrum.mz
@@ -403,80 +403,80 @@ class MzMLPeakExtractor:
                         for idx, (mz, intensity) in enumerate(zip(mz_array, intensity_array)):
                             if intensity > intensity_threshold:
                                 peaks.append({
-                                    'spectrum_index': spectrum_count,
-                                    'retention_time(RT)': spectrum.scan_time[0] if hasattr(spectrum,
+                                    '谱图索引': spectrum_count,
+                                    '保留时间(RT)': spectrum.scan_time[0] if hasattr(spectrum,
                                                                                      'scan_time') and spectrum.scan_time else spectrum_count * 0.5,
-                                    '(m/z)': float(mz),
-                                    '': float(intensity),
-                                    'MS': 1,
-                                    'ID': f"F{spectrum_count:05d}_{idx:04d}"
+                                    '质荷比(m/z)': float(mz),
+                                    '强度': float(intensity),
+                                    'MS级别': 1,
+                                    '特征ID': f"F{spectrum_count:05d}_{idx:04d}"
                                 })
 
                         spectrum_count += 1
 
-                # Update progress
+                # 更新进度
                 if spectrum_count % 100 == 0:
                     progress = min(100, spectrum_count // 10)
-                    self.update_progress(progress, f" {spectrum_count}")
+                    self.update_progress(progress, f"处理谱图 {spectrum_count}")
 
             if peaks:
-                return peaks, f"pymzML: {len(peaks)}peak"
+                return peaks, f"pymzML提取成功: {len(peaks)}个峰"
             else:
-                return None, "pymzMLconditionpeak"
+                return None, "pymzML未找到符合条件的峰"
 
         except ImportError:
-            return None, "pymzML"
+            return None, "pymzML未安装"
         except Exception as e:
-            return None, f"pymzMLfailed: {str(e)}"
+            return None, f"pymzML处理失败: {str(e)}"
 
     def extract_peaks_from_mzml(self, mzml_file: str, intensity_threshold: float = 1000) -> Tuple[
         bool, str, Optional[pd.DataFrame]]:
-        """Extract peak data from mzML files"""
+        """从mzML文件提取峰数据"""
         try:
-            self.log("peakdata...")
-            self.update_progress(10, "peakdata...")
+            self.log("开始提取峰数据...")
+            self.update_progress(10, "提取峰数据...")
 
-            # peak
+            # 提取峰
             peaks, msg = self.extract_peaks_with_pymzml(mzml_file, intensity_threshold)
 
             if peaks is None:
                 return False, msg, None
 
-            # DataFrame
+            # 转换为DataFrame
             df = pd.DataFrame(peaks)
 
-            # columncompound matching
+            # 重命名列以便与化合物匹配器兼容
             column_mapping = {
-                '(m/z)': '(m/z)',
-                'retention_time(RT)': 'retention_time(RT)',
-                '': ''
+                '质荷比(m/z)': '质荷比(m/z)',
+                '保留时间(RT)': '保留时间(RT)',
+                '强度': '强度'
             }
 
             for old_col, new_col in column_mapping.items():
                 if old_col in df.columns:
                     df = df.rename(columns={old_col: new_col})
 
-            self.update_progress(100, "peak")
-            return True, f" {len(df)} peak", df
+            self.update_progress(100, "峰提取完成")
+            return True, f"成功提取 {len(df)} 个峰", df
 
         except Exception as e:
-            return False, f"peakdatafailed: {str(e)}", None
+            return False, f"提取峰数据失败: {str(e)}", None
 
     def extract_peaks_from_csv(self, csv_file: str) -> Tuple[bool, str, Optional[pd.DataFrame]]:
-        """CSVfileloadpeakdata"""
+        """从CSV文件加载峰数据"""
         try:
-            self.log("CSVfileloadpeakdata...")
+            self.log("从CSV文件加载峰数据...")
 
             df = pd.read_csv(csv_file)
 
-            # column
-            required_columns = ['(m/z)', 'retention_time(RT)', '']
+            # 检查必要的列
+            required_columns = ['质荷比(m/z)', '保留时间(RT)', '强度']
 
-            # column
+            # 尝试查找其他可能的列名
             column_mapping = {
-                '(m/z)': ['mz', 'M/Z', 'm/z'],
-                'retention_time(RT)': ['rt', 'RT', 'retention_time'],
-                '': ['intensity', 'Intensity', '']
+                '质荷比(m/z)': ['mz', 'M/Z', 'm/z'],
+                '保留时间(RT)': ['rt', 'RT', '保留时间'],
+                '强度': ['intensity', 'Intensity', '强度']
             }
 
             for req_col, possible_names in column_mapping.items():
@@ -486,51 +486,51 @@ class MzMLPeakExtractor:
                             df = df.rename(columns={name: req_col})
                             break
 
-            # translated note
+            # 再次检查
             missing_cols = [col for col in required_columns if col not in df.columns]
             if missing_cols:
-                return False, f"CSVfilecolumn: {', '.join(missing_cols)}", None
+                return False, f"CSV文件缺少必要列: {', '.join(missing_cols)}", None
 
-            return True, f"load {len(df)} peak", df
+            return True, f"成功加载 {len(df)} 个峰", df
 
         except Exception as e:
-            return False, f"loadCSVfilefailed: {str(e)}", None
+            return False, f"加载CSV文件失败: {str(e)}", None
 
 
 class MzMLCompoundMatcherGUI:
-    """mzMLpeakcompound matchingGUI"""
+    """mzML峰提取与化合物匹配GUI"""
 
     def __init__(self, root):
-        """GUI"""
+        """初始化GUI"""
         self.root = root
-        self.root.title("mzMLpeakcompound matching")
+        self.root.title("mzML峰提取与化合物匹配程序")
         self.root.geometry("1000x800")
 
-        # translated note
+        # 设置图标
         try:
             self.root.iconbitmap(default='icon.ico')
         except:
             pass
 
-        # translated note
+        # 处理器
         self.peak_extractor = None
         self.compound_matcher = None
         self.processing_thread = None
         self.is_processing = False
 
-        # UI
+        # 创建UI
         self.setup_ui()
 
-        # translated note
+        # 绑定关闭事件
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def setup_ui(self):
-        """UI"""
-        # translated note
+        """设置UI界面"""
+        # 创建主框架和滚动条
         main_frame = tk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Canvas
+        # 创建Canvas和滚动条
         canvas = tk.Canvas(main_frame)
         scrollbar = ttk.Scrollbar(main_frame, orient=tk.VERTICAL, command=canvas.yview)
         scrollable_frame = tk.Frame(canvas)
@@ -546,98 +546,98 @@ class MzMLCompoundMatcherGUI:
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # translated note
+        # 主内容
         content_frame = tk.Frame(scrollable_frame, padx=20, pady=20)
         content_frame.pack(fill=tk.BOTH, expand=True)
 
-        # translated note
-        title_label = tk.Label(content_frame, text="mzMLpeakcompound matching",
+        # 标题
+        title_label = tk.Label(content_frame, text="mzML峰提取与化合物匹配程序",
                                font=("Arial", 18, "bold"))
         title_label.pack(pady=(0, 10))
 
-        # Version
-        version_label = tk.Label(content_frame, text="Version 7.0 - compound matching",
+        # 版本信息
+        version_label = tk.Label(content_frame, text="版本 7.0 - 支持化合物匹配",
                                  font=("Arial", 10))
         version_label.pack(pady=(0, 20))
 
-        # ==================== 1: peakdata ====================
-        step1_frame = tk.LabelFrame(content_frame, text="1: peakdata", font=("Arial", 12, "bold"),
+        # ==================== 第1步: 峰数据源选择 ====================
+        step1_frame = tk.LabelFrame(content_frame, text="第1步: 选择峰数据源", font=("Arial", 12, "bold"),
                                     padx=10, pady=10)
         step1_frame.pack(fill=tk.X, pady=(0, 20))
 
-        # data
+        # 数据源选择
         self.data_source_var = tk.StringVar(value="mzml")
-        ttk.Radiobutton(step1_frame, text="Extract peak data from mzML files",
+        ttk.Radiobutton(step1_frame, text="从mzML文件提取峰数据",
                         variable=self.data_source_var, value="mzml",
                         command=self.on_data_source_change).grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
 
-        ttk.Radiobutton(step1_frame, text="CSVfileloadpeakdata",
+        ttk.Radiobutton(step1_frame, text="从现有CSV文件加载峰数据",
                         variable=self.data_source_var, value="csv",
                         command=self.on_data_source_change).grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
 
-        # mzMLfile
+        # mzML文件选择
         self.mzml_frame = tk.Frame(step1_frame)
         self.mzml_frame.grid(row=1, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
 
-        ttk.Label(self.mzml_frame, text="mzMLfile:").grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
+        ttk.Label(self.mzml_frame, text="mzML文件:").grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
 
         self.mzml_file_var = tk.StringVar()
         mzml_file_entry = ttk.Entry(self.mzml_frame, textvariable=self.mzml_file_var, width=60)
         mzml_file_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 5))
 
-        ttk.Button(self.mzml_frame, text="...", command=self.browse_mzml_file).grid(row=0, column=2, padx=(0, 5))
+        ttk.Button(self.mzml_frame, text="浏览...", command=self.browse_mzml_file).grid(row=0, column=2, padx=(0, 5))
 
-        # CSVfile
+        # CSV文件选择
         self.csv_frame = tk.Frame(step1_frame)
         self.csv_frame.grid(row=2, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
 
-        ttk.Label(self.csv_frame, text="CSVfile:").grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
+        ttk.Label(self.csv_frame, text="CSV文件:").grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
 
         self.csv_file_var = tk.StringVar()
         csv_file_entry = ttk.Entry(self.csv_frame, textvariable=self.csv_file_var, width=60)
         csv_file_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 5))
 
-        ttk.Button(self.csv_frame, text="...", command=self.browse_csv_file).grid(row=0, column=2, padx=(0, 5))
+        ttk.Button(self.csv_frame, text="浏览...", command=self.browse_csv_file).grid(row=0, column=2, padx=(0, 5))
 
-        # translated note
-        ttk.Label(step1_frame, text=":").grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
+        # 强度阈值
+        ttk.Label(step1_frame, text="强度阈值:").grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
 
         self.intensity_threshold_var = tk.StringVar(value="1000")
         threshold_entry = ttk.Entry(step1_frame, textvariable=self.intensity_threshold_var, width=15)
         threshold_entry.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
 
-        # CSV
+        # 初始隐藏CSV框架
         self.csv_frame.grid_remove()
 
-        # ==================== 2: compoundload ====================
-        step2_frame = tk.LabelFrame(content_frame, text="2: loadcompound", font=("Arial", 12, "bold"),
+        # ==================== 第2步: 化合物信息加载 ====================
+        step2_frame = tk.LabelFrame(content_frame, text="第2步: 加载化合物信息", font=("Arial", 12, "bold"),
                                     padx=10, pady=10)
         step2_frame.pack(fill=tk.X, pady=(0, 20))
 
-        ttk.Label(step2_frame, text="compoundExcelfile:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        ttk.Label(step2_frame, text="化合物Excel文件:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
 
         self.compound_file_var = tk.StringVar()
         compound_file_entry = ttk.Entry(step2_frame, textvariable=self.compound_file_var, width=60)
         compound_file_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 5), pady=5)
 
-        ttk.Button(step2_frame, text="...", command=self.browse_compound_file).grid(row=0, column=2, pady=5)
+        ttk.Button(step2_frame, text="浏览...", command=self.browse_compound_file).grid(row=0, column=2, pady=5)
 
-        # translated note
-        ttk.Button(step2_frame, text="compound", command=self.preview_compounds).grid(row=1, column=0, sticky=tk.W,
+        # 预览按钮
+        ttk.Button(step2_frame, text="预览化合物", command=self.preview_compounds).grid(row=1, column=0, sticky=tk.W,
                                                                                         padx=5, pady=5)
 
-        # load
-        self.compound_status_var = tk.StringVar(value="loadcompound")
+        # 加载状态
+        self.compound_status_var = tk.StringVar(value="未加载化合物信息")
         ttk.Label(step2_frame, textvariable=self.compound_status_var).grid(row=1, column=1, columnspan=2, sticky=tk.W,
                                                                            padx=5, pady=5)
 
-        # ==================== 3: matchParameters ====================
-        step3_frame = tk.LabelFrame(content_frame, text="3: matchParameters", font=("Arial", 12, "bold"),
+        # ==================== 第3步: 匹配参数设置 ====================
+        step3_frame = tk.LabelFrame(content_frame, text="第3步: 设置匹配参数", font=("Arial", 12, "bold"),
                                     padx=10, pady=10)
         step3_frame.pack(fill=tk.X, pady=(0, 20))
 
-        # m/z (ppm)
-        ttk.Label(step3_frame, text="m/z (ppm):").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        # m/z误差 (ppm)
+        ttk.Label(step3_frame, text="m/z误差 (ppm):").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
 
         self.ppm_tolerance_var = tk.StringVar(value="10")
         ppm_entry = ttk.Entry(step3_frame, textvariable=self.ppm_tolerance_var, width=15)
@@ -645,30 +645,30 @@ class MzMLCompoundMatcherGUI:
 
         ttk.Label(step3_frame, text="ppm").grid(row=0, column=2, sticky=tk.W, padx=(0, 20), pady=5)
 
-        # RT ()
-        ttk.Label(step3_frame, text="RT ():").grid(row=0, column=3, sticky=tk.W, padx=5, pady=5)
+        # RT窗口 (秒)
+        ttk.Label(step3_frame, text="RT窗口 (秒):").grid(row=0, column=3, sticky=tk.W, padx=5, pady=5)
 
         self.rt_window_var = tk.StringVar(value="30")
         rt_entry = ttk.Entry(step3_frame, textvariable=self.rt_window_var, width=15)
         rt_entry.grid(row=0, column=4, sticky=tk.W, padx=5, pady=5)
 
-        ttk.Label(step3_frame, text="").grid(row=0, column=5, sticky=tk.W, padx=(0, 5), pady=5)
+        ttk.Label(step3_frame, text="秒").grid(row=0, column=5, sticky=tk.W, padx=(0, 5), pady=5)
 
-        # outputdirectory
-        ttk.Label(step3_frame, text="outputdirectory:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=(10, 5))
+        # 输出目录
+        ttk.Label(step3_frame, text="输出目录:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=(10, 5))
 
         self.output_dir_var = tk.StringVar()
         output_dir_entry = ttk.Entry(step3_frame, textvariable=self.output_dir_var, width=60)
         output_dir_entry.grid(row=1, column=1, columnspan=4, sticky=(tk.W, tk.E), padx=(0, 5), pady=(10, 5))
 
-        ttk.Button(step3_frame, text="...", command=self.browse_output_dir).grid(row=1, column=5, pady=(10, 5))
+        ttk.Button(step3_frame, text="浏览...", command=self.browse_output_dir).grid(row=1, column=5, pady=(10, 5))
 
-        # ==================== 4: ====================
-        step4_frame = tk.LabelFrame(content_frame, text="4: ", font=("Arial", 12, "bold"),
+        # ==================== 第4步: 进度显示 ====================
+        step4_frame = tk.LabelFrame(content_frame, text="第4步: 处理进度", font=("Arial", 12, "bold"),
                                     padx=10, pady=10)
         step4_frame.pack(fill=tk.X, pady=(0, 20))
 
-        self.progress_var = tk.StringVar(value="")
+        self.progress_var = tk.StringVar(value="准备就绪")
         ttk.Label(step4_frame, textvariable=self.progress_var).pack(anchor=tk.W, pady=(0, 5))
 
         self.progress_bar = ttk.Progressbar(step4_frame, mode='determinate', length=900)
@@ -677,51 +677,51 @@ class MzMLCompoundMatcherGUI:
         self.progress_percent = tk.StringVar(value="0%")
         ttk.Label(step4_frame, textvariable=self.progress_percent).pack(anchor=tk.E)
 
-        # ==================== 5: ====================
-        step5_frame = tk.LabelFrame(content_frame, text="5: ", font=("Arial", 12, "bold"),
+        # ==================== 第5步: 日志显示 ====================
+        step5_frame = tk.LabelFrame(content_frame, text="第5步: 处理日志", font=("Arial", 12, "bold"),
                                     padx=10, pady=10)
         step5_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 20))
 
-        # translated note
+        # 日志文本框
         self.log_text = scrolledtext.ScrolledText(step5_frame, width=120, height=15,
                                                   wrap=tk.WORD, font=("Consolas", 10))
         self.log_text.pack(fill=tk.BOTH, expand=True)
 
-        # translated note
+        # 配置标签颜色
         self.log_text.tag_config("INFO", foreground="black")
         self.log_text.tag_config("SUCCESS", foreground="green")
         self.log_text.tag_config("WARNING", foreground="orange")
         self.log_text.tag_config("ERROR", foreground="red")
 
-        # ==================== ====================
+        # ==================== 按钮区域 ====================
         button_frame = tk.Frame(content_frame)
         button_frame.pack(fill=tk.X, pady=(0, 10))
 
-        self.process_button = ttk.Button(button_frame, text="",
+        self.process_button = ttk.Button(button_frame, text="开始处理",
                                          command=self.start_processing, width=20)
         self.process_button.pack(side=tk.LEFT, padx=5)
 
-        self.cancel_button = ttk.Button(button_frame, text="",
+        self.cancel_button = ttk.Button(button_frame, text="取消处理",
                                         command=self.cancel_processing, width=20,
                                         state=tk.DISABLED)
         self.cancel_button.pack(side=tk.LEFT, padx=5)
 
-        ttk.Button(button_frame, text="", command=self.clear_log).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="清空日志", command=self.clear_log).pack(side=tk.LEFT, padx=5)
 
-        ttk.Button(button_frame, text="outputdirectory", command=self.open_output_dir).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="打开输出目录", command=self.open_output_dir).pack(side=tk.LEFT, padx=5)
 
-        ttk.Button(button_frame, text="", command=self.on_closing).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="退出", command=self.on_closing).pack(side=tk.LEFT, padx=5)
 
-        # translated note
-        self.status_var = tk.StringVar(value="")
+        # 状态栏
+        self.status_var = tk.StringVar(value="就绪")
         status_bar = ttk.Label(content_frame, textvariable=self.status_var, relief=tk.SUNKEN)
         status_bar.pack(fill=tk.X, pady=(0, 10))
 
-        # translated note
+        # 初始化
         self.on_data_source_change()
 
     def on_data_source_change(self):
-        """data"""
+        """数据源改变事件"""
         source = self.data_source_var.get()
 
         if source == "mzml":
@@ -732,44 +732,44 @@ class MzMLCompoundMatcherGUI:
             self.csv_frame.grid()
 
     def browse_mzml_file(self):
-        """mzMLfile"""
-        file_types = [("mzMLfile", "*.mzML *.mzML.gz"), ("file", "*.*")]
-        file_path = filedialog.askopenfilename(title="mzMLfile", filetypes=file_types)
+        """浏览mzML文件"""
+        file_types = [("mzML文件", "*.mzML *.mzML.gz"), ("所有文件", "*.*")]
+        file_path = filedialog.askopenfilename(title="选择mzML文件", filetypes=file_types)
 
         if file_path:
             self.mzml_file_var.set(file_path)
 
     def browse_csv_file(self):
-        """CSVfile"""
-        file_types = [("CSVfile", "*.csv"), ("file", "*.*")]
-        file_path = filedialog.askopenfilename(title="CSVfile", filetypes=file_types)
+        """浏览CSV文件"""
+        file_types = [("CSV文件", "*.csv"), ("所有文件", "*.*")]
+        file_path = filedialog.askopenfilename(title="选择CSV文件", filetypes=file_types)
 
         if file_path:
             self.csv_file_var.set(file_path)
 
     def browse_compound_file(self):
-        """compoundExcelfile"""
-        file_types = [("Excelfile", "*.xlsx *.xls"), ("file", "*.*")]
-        file_path = filedialog.askopenfilename(title="compoundExcelfile", filetypes=file_types)
+        """浏览化合物Excel文件"""
+        file_types = [("Excel文件", "*.xlsx *.xls"), ("所有文件", "*.*")]
+        file_path = filedialog.askopenfilename(title="选择化合物Excel文件", filetypes=file_types)
 
         if file_path:
             self.compound_file_var.set(file_path)
-            # translated note
+            # 尝试预览
             self.preview_compounds()
 
     def browse_output_dir(self):
-        """outputdirectory"""
-        dir_path = filedialog.askdirectory(title="outputdirectory")
+        """浏览输出目录"""
+        dir_path = filedialog.askdirectory(title="选择输出目录")
 
         if dir_path:
             self.output_dir_var.set(dir_path)
 
     def preview_compounds(self):
-        """compound"""
+        """预览化合物信息"""
         compound_file = self.compound_file_var.get()
 
         if not compound_file:
-            messagebox.showwarning("Warning", "compoundExcelfile")
+            messagebox.showwarning("警告", "请先选择化合物Excel文件")
             return
 
         try:
@@ -777,16 +777,16 @@ class MzMLCompoundMatcherGUI:
             success, msg, df = matcher.load_compounds_from_excel(compound_file)
 
             if success:
-                # translated note
+                # 创建预览窗口
                 preview_window = tk.Toplevel(self.root)
-                preview_window.title("compound")
+                preview_window.title("化合物信息预览")
                 preview_window.geometry("800x600")
 
-                # Treeviewdata
+                # 创建Treeview显示数据
                 tree_frame = tk.Frame(preview_window)
                 tree_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-                # translated note
+                # 滚动条
                 tree_scroll_y = ttk.Scrollbar(tree_frame)
                 tree_scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
 
@@ -801,50 +801,50 @@ class MzMLCompoundMatcherGUI:
                 tree_scroll_y.config(command=tree.yview)
                 tree_scroll_x.config(command=tree.xview)
 
-                # column
+                # 定义列
                 tree["columns"] = list(df.columns)
                 tree["show"] = "headings"
 
-                # column
+                # 设置列标题
                 for col in df.columns:
                     tree.heading(col, text=col)
                     tree.column(col, width=100)
 
-                # data
+                # 添加数据
                 for _, row in df.iterrows():
                     tree.insert("", tk.END, values=list(row))
 
-                # translated note
+                # 统计信息
                 info_frame = tk.Frame(preview_window)
                 info_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
 
-                tk.Label(info_frame, text=f"load {len(df)} compound").pack(side=tk.LEFT)
+                tk.Label(info_frame, text=f"共加载 {len(df)} 个化合物").pack(side=tk.LEFT)
 
                 if 'mz' in df.columns:
-                    mz_range = f"m/z: {df['mz'].min():.4f} - {df['mz'].max():.4f}"
+                    mz_range = f"m/z范围: {df['mz'].min():.4f} - {df['mz'].max():.4f}"
                     tk.Label(info_frame, text=mz_range).pack(side=tk.LEFT, padx=20)
 
-                # translated note
-                tk.Button(preview_window, text="", command=preview_window.destroy).pack(pady=10)
+                # 关闭按钮
+                tk.Button(preview_window, text="关闭", command=preview_window.destroy).pack(pady=10)
 
-                self.compound_status_var.set(f"load {len(df)} compound")
-                self.log_message(f"✓ load {len(df)} compound", "SUCCESS")
+                self.compound_status_var.set(f"已加载 {len(df)} 个化合物")
+                self.log_message(f"✓ 成功加载 {len(df)} 个化合物", "SUCCESS")
             else:
-                messagebox.showerror("", msg)
-                self.compound_status_var.set("loadfailed")
-                self.log_message(f"✗ loadcompoundfailed: {msg}", "ERROR")
+                messagebox.showerror("错误", msg)
+                self.compound_status_var.set("加载失败")
+                self.log_message(f"✗ 加载化合物失败: {msg}", "ERROR")
 
         except Exception as e:
-            messagebox.showerror("", f"failed: {str(e)}")
+            messagebox.showerror("错误", f"预览失败: {str(e)}")
 
     def log_message(self, message: str, level: str = "INFO"):
-        """message"""
+        """添加日志消息"""
         self.log_text.insert(tk.END, message + "\n", level)
         self.log_text.see(tk.END)
         self.root.update()
 
     def update_progress(self, value: int, message: str = ""):
-        """Update progress"""
+        """更新进度条"""
         self.progress_bar['value'] = value
         if message:
             self.progress_var.set(message)
@@ -852,87 +852,87 @@ class MzMLCompoundMatcherGUI:
         self.root.update()
 
     def update_status(self, message: str):
-        """"""
+        """更新状态栏"""
         self.status_var.set(message)
         self.root.update()
 
     def clear_log(self):
-        """"""
+        """清空日志"""
         self.log_text.delete(1.0, tk.END)
 
     def validate_inputs(self) -> Tuple[bool, str]:
-        """inputParameters"""
-        # data
+        """验证输入参数"""
+        # 检查数据源
         source = self.data_source_var.get()
 
         if source == "mzml":
             mzml_file = self.mzml_file_var.get().strip()
             if not mzml_file:
-                return False, "mzMLfile"
+                return False, "请选择mzML文件"
             if not os.path.exists(mzml_file):
-                return False, f"mzMLfile does not exist: {mzml_file}"
+                return False, f"mzML文件不存在: {mzml_file}"
         else:
             csv_file = self.csv_file_var.get().strip()
             if not csv_file:
-                return False, "CSVfile"
+                return False, "请选择CSV文件"
             if not os.path.exists(csv_file):
-                return False, f"CSVfile does not exist: {csv_file}"
+                return False, f"CSV文件不存在: {csv_file}"
 
-        # compoundfile
+        # 检查化合物文件
         compound_file = self.compound_file_var.get().strip()
         if not compound_file:
-            return False, "compoundExcelfile"
+            return False, "请选择化合物Excel文件"
         if not os.path.exists(compound_file):
-            return False, f"compoundfile does not exist: {compound_file}"
+            return False, f"化合物文件不存在: {compound_file}"
 
-        # outputdirectory
+        # 检查输出目录
         output_dir = self.output_dir_var.get().strip()
         if not output_dir:
-            return False, "outputdirectory"
+            return False, "请选择输出目录"
 
-        # Parameters
+        # 检查参数
         try:
             ppm_tolerance = float(self.ppm_tolerance_var.get())
             if ppm_tolerance <= 0:
-                return False, "m/z0"
+                return False, "m/z误差必须大于0"
         except ValueError:
-            return False, "m/z"
+            return False, "m/z误差必须是数字"
 
         try:
             rt_window = float(self.rt_window_var.get())
             if rt_window < 0:
-                return False, "RT"
+                return False, "RT窗口不能为负数"
         except ValueError:
-            return False, "RT"
+            return False, "RT窗口必须是数字"
 
         try:
             intensity_threshold = float(self.intensity_threshold_var.get())
             if intensity_threshold < 0:
-                return False, ""
+                return False, "强度阈值不能为负数"
         except ValueError:
-            return False, ""
+            return False, "强度阈值必须是数字"
 
-        return True, ""
+        return True, "验证通过"
 
     def start_processing(self):
-        """"""
-        # input
+        """开始处理"""
+        # 验证输入
         is_valid, message = self.validate_inputs()
         if not is_valid:
-            messagebox.showerror("input", message)
+            messagebox.showerror("输入错误", message)
             return
 
-        # ,
+        # 禁用开始按钮，启用取消按钮
         self.process_button.config(state=tk.DISABLED)
         self.cancel_button.config(state=tk.NORMAL)
 
-        # translated note
+        # 清空进度和日志
         self.progress_bar['value'] = 0
-        self.progress_var.set("...")
+        self.progress_var.set("开始处理...")
         self.progress_percent.set("0%")
         self.clear_log()
 
-        # Parameters
+        # 获取参数
         source = self.data_source_var.get()
         compound_file = self.compound_file_var.get()
         output_dir = self.output_dir_var.get()
@@ -941,7 +941,7 @@ class MzMLCompoundMatcherGUI:
         rt_window = float(self.rt_window_var.get())
         intensity_threshold = float(self.intensity_threshold_var.get())
 
-        # translated note
+        # 创建处理器
         self.peak_extractor = MzMLPeakExtractor(
             progress_callback=self.update_progress,
             log_callback=self.log_message
@@ -949,7 +949,7 @@ class MzMLCompoundMatcherGUI:
 
         self.compound_matcher = CompoundMatcher()
 
-        # translated note
+        # 在新线程中处理
         if source == "mzml":
             mzml_file = self.mzml_file_var.get()
             self.processing_thread = threading.Thread(
@@ -968,155 +968,155 @@ class MzMLCompoundMatcherGUI:
         self.is_processing = True
         self.processing_thread.start()
 
-        # translated note
+        # 启动进度监视器
         self.root.after(100, self.check_processing_status)
 
     def process_mzml_match(self, mzml_file: str, compound_file: str, output_dir: str,
                            ppm_tolerance: float, rt_window: float, intensity_threshold: float):
-        """mzMLfilecompound matching ()"""
+        """处理mzML文件和化合物匹配（在线程中）"""
         try:
-            self.log_message("1: Extract peak data from mzML files...")
-            self.update_progress(20, "peakdata...")
+            self.log_message("步骤1: 从mzML文件提取峰数据...")
+            self.update_progress(20, "提取峰数据...")
 
-            # peakdata
+            # 提取峰数据
             success, msg, peaks_df = self.peak_extractor.extract_peaks_from_mzml(
                 mzml_file, intensity_threshold
             )
 
             if not success:
-                self.root.after(0, lambda: messagebox.showerror("", msg))
+                self.root.after(0, lambda: messagebox.showerror("错误", msg))
                 self.processing_finished()
                 return
 
-            self.log_message(f"✓ {len(peaks_df)} peak", "SUCCESS")
+            self.log_message(f"✓ 成功提取 {len(peaks_df)} 个峰", "SUCCESS")
 
-            # compound matching
+            # 进行化合物匹配
             self.process_compound_matching(peaks_df, compound_file, output_dir,
                                            ppm_tolerance, rt_window, mzml_file)
 
         except Exception as e:
-            error_msg = f": {str(e)}"
+            error_msg = f"处理过程中出错: {str(e)}"
             self.root.after(0, lambda: self.log_message(error_msg, "ERROR"))
             self.root.after(0, self.processing_finished)
 
     def process_csv_match(self, csv_file: str, compound_file: str, output_dir: str,
                           ppm_tolerance: float, rt_window: float, intensity_threshold: float):
-        """CSVfilecompound matching ()"""
+        """处理CSV文件和化合物匹配（在线程中）"""
         try:
-            self.log_message("1: CSVfileloadpeakdata...")
-            self.update_progress(20, "loadpeakdata...")
+            self.log_message("步骤1: 从CSV文件加载峰数据...")
+            self.update_progress(20, "加载峰数据...")
 
-            # loadpeakdata
+            # 加载峰数据
             success, msg, peaks_df = self.peak_extractor.extract_peaks_from_csv(csv_file)
 
             if not success:
-                self.root.after(0, lambda: messagebox.showerror("", msg))
+                self.root.after(0, lambda: messagebox.showerror("错误", msg))
                 self.processing_finished()
                 return
 
-            self.log_message(f"✓ load {len(peaks_df)} peak", "SUCCESS")
+            self.log_message(f"✓ 成功加载 {len(peaks_df)} 个峰", "SUCCESS")
 
-            # compound matching
+            # 进行化合物匹配
             self.process_compound_matching(peaks_df, compound_file, output_dir,
                                            ppm_tolerance, rt_window, csv_file)
 
         except Exception as e:
-            error_msg = f": {str(e)}"
+            error_msg = f"处理过程中出错: {str(e)}"
             self.root.after(0, lambda: self.log_message(error_msg, "ERROR"))
             self.root.after(0, self.processing_finished)
 
     def process_compound_matching(self, peaks_df: pd.DataFrame, compound_file: str,
                                   output_dir: str, ppm_tolerance: float, rt_window: float,
                                   source_file: str):
-        """compound matching"""
+        """执行化合物匹配"""
         try:
-            self.log_message("2: loadcompound...")
-            self.update_progress(40, "loadcompound...")
+            self.log_message("步骤2: 加载化合物信息...")
+            self.update_progress(40, "加载化合物信息...")
 
-            # loadcompound
+            # 加载化合物信息
             self.compound_matcher.set_match_settings(ppm_tolerance, rt_window)
 
             success, msg, _ = self.compound_matcher.load_compounds_from_excel(compound_file)
             if not success:
-                self.root.after(0, lambda: messagebox.showerror("", msg))
+                self.root.after(0, lambda: messagebox.showerror("错误", msg))
                 self.processing_finished()
                 return
 
-            self.log_message(f"✓ loadcompound", "SUCCESS")
+            self.log_message(f"✓ 成功加载化合物信息", "SUCCESS")
 
-            self.log_message("3: matchcompound...")
-            self.update_progress(60, "matchcompound...")
+            self.log_message("步骤3: 匹配化合物...")
+            self.update_progress(60, "匹配化合物...")
 
-            # match
+            # 执行匹配
             success, msg = self.compound_matcher.match_compounds(peaks_df)
             if not success:
-                self.root.after(0, lambda: messagebox.showwarning("Warning", msg))
+                self.root.after(0, lambda: messagebox.showwarning("警告", msg))
 
-            self.log_message(f"✓ compound matching", "SUCCESS")
+            self.log_message(f"✓ 化合物匹配完成", "SUCCESS")
 
-            self.log_message("4: savematching results...")
-            self.update_progress(80, "savematching results...")
+            self.log_message("步骤4: 保存匹配结果...")
+            self.update_progress(80, "保存匹配结果...")
 
-            # saveresults
+            # 保存结果
             base_name = Path(source_file).stem
             success, msg, saved_files = self.compound_matcher.save_match_results(
-                output_dir, f"{base_name}_compound matching"
+                output_dir, f"{base_name}_化合物匹配"
             )
 
             if success:
-                self.log_message(f"✓ resultssave", "SUCCESS")
-                self.log_message(f" file:", "INFO")
+                self.log_message(f"✓ 结果已保存", "SUCCESS")
+                self.log_message(f"  生成的文件:", "INFO")
                 for file_path in saved_files:
                     self.log_message(f"    • {Path(file_path).name}", "INFO")
 
-                # translated note
+                # 显示成功对话框
                 self.root.after(0, lambda: messagebox.showinfo(
-                    "",
-                    f"compound matching！\nresultssave: {output_dir}"
+                    "处理成功",
+                    f"化合物匹配完成！\n结果已保存到: {output_dir}"
                 ))
             else:
-                self.log_message(f"✗ saveresultsfailed: {msg}", "ERROR")
-                self.root.after(0, lambda: messagebox.showerror("", f"saveresultsfailed: {msg}"))
+                self.log_message(f"✗ 保存结果失败: {msg}", "ERROR")
+                self.root.after(0, lambda: messagebox.showerror("错误", f"保存结果失败: {msg}"))
 
-            self.update_progress(100, "")
+            self.update_progress(100, "处理完成")
             self.processing_finished()
 
         except Exception as e:
-            error_msg = f"compound matching: {str(e)}"
+            error_msg = f"化合物匹配过程中出错: {str(e)}"
             self.root.after(0, lambda: self.log_message(error_msg, "ERROR"))
             self.root.after(0, self.processing_finished)
 
     def check_processing_status(self):
-        """"""
+        """检查处理状态"""
         if self.is_processing and self.processing_thread.is_alive():
-            # translated note
+            # 继续检查
             self.root.after(100, self.check_processing_status)
         elif self.is_processing:
-            # , results
+            # 线程已结束，但结果可能还未显示
             self.root.after(100, self.check_processing_status)
 
     def processing_finished(self):
-        """"""
+        """处理完成"""
         self.is_processing = False
         self.peak_extractor = None
         self.compound_matcher = None
 
-        # ,
+        # 启用开始按钮，禁用取消按钮
         self.process_button.config(state=tk.NORMAL)
         self.cancel_button.config(state=tk.DISABLED)
 
-        # translated note
-        self.update_status("")
+        # 更新状态
+        self.update_status("处理完成")
 
     def cancel_processing(self):
-        """"""
+        """取消处理"""
         if self.peak_extractor and self.is_processing:
             self.peak_extractor.cancel_requested = True
-            self.log_message("...", "WARNING")
-            self.update_status("...")
+            self.log_message("正在取消处理...", "WARNING")
+            self.update_status("正在取消...")
 
     def open_output_dir(self):
-        """outputdirectory"""
+        """打开输出目录"""
         output_dir = self.output_dir_var.get().strip()
 
         if output_dir and os.path.exists(output_dir):
@@ -1128,14 +1128,14 @@ class MzMLCompoundMatcherGUI:
                 else:
                     os.system(f'xdg-open "{output_dir}"')
             except Exception as e:
-                messagebox.showerror("", f"directory: {str(e)}")
+                messagebox.showerror("错误", f"无法打开目录: {str(e)}")
         else:
-            messagebox.showwarning("Warning", "outputdirectory")
+            messagebox.showwarning("警告", "输出目录不存在或未设置")
 
     def on_closing(self):
-        """"""
+        """关闭窗口事件"""
         if self.is_processing:
-            if messagebox.askyesno("", ", ？"):
+            if messagebox.askyesno("确认", "正在处理中，确定要退出吗？"):
                 if self.peak_extractor:
                     self.peak_extractor.cancel_requested = True
                 self.root.destroy()
@@ -1144,16 +1144,16 @@ class MzMLCompoundMatcherGUI:
 
 
 def check_dependencies():
-    """"""
+    """检查依赖库"""
     print("=" * 70)
-    print("...")
+    print("检查依赖库...")
     print("=" * 70)
 
     dependencies = {
-        'pandas': 'data',
-        'numpy': 'calculate',
-        'openpyxl': 'Excelfile',
-        'pymzml': 'mzMLfile (peak)'
+        'pandas': '数据处理库',
+        'numpy': '数值计算库',
+        'openpyxl': 'Excel文件支持',
+        'pymzml': 'mzML文件读取 (峰提取)'
     }
 
     missing = []
@@ -1163,11 +1163,11 @@ def check_dependencies():
             __import__(lib)
             print(f"✓ {lib}: {desc}")
         except ImportError:
-            print(f"✗ {lib}: {desc} - ")
+            print(f"✗ {lib}: {desc} - 未安装")
             missing.append(lib)
 
     if missing:
-        print(f"\n:")
+        print(f"\n缺少以下库:")
         for lib in missing:
             print(f"  pip install {lib}")
 
@@ -1176,26 +1176,26 @@ def check_dependencies():
 
 
 def main():
-    """"""
+    """主函数"""
 
-    # GUI
+    # 检查GUI支持
     if not GUI_AVAILABLE:
-        print(": tkinter, GUI")
-        print("tkinter:")
+        print("错误: tkinter未安装，无法启动GUI")
+        print("请安装tkinter:")
         print("  Ubuntu/Debian: sudo apt-get install python3-tk")
-        print(" Windows/macOS: ")
+        print("  Windows/macOS: 通常已预装")
         return
 
-    # translated note
+    # 检查依赖
     if not check_dependencies():
-        response = input("\n, ? (y/n): ")
+        response = input("\n缺少依赖库，是否继续? (y/n): ")
         if response.lower() != 'y':
             return
 
-    # translated note
+    # 创建主窗口
     root = tk.Tk()
 
-    # translated note
+    # 设置窗口居中
     window_width = 1000
     window_height = 800
     screen_width = root.winfo_screenwidth()
@@ -1204,22 +1204,22 @@ def main():
     y = (screen_height - window_height) // 2
     root.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
-    # GUI
+    # 创建GUI
     app = MzMLCompoundMatcherGUI(root)
 
-    # translated note
+    # 运行主循环
     root.mainloop()
 
 
 if __name__ == "__main__":
-    print("mzMLpeakcompound matching")
-    print("Version: 7.0")
-    print(":")
-    print(" 1. Extract peak data from mzML files")
-    print(" 2. CSVfileloadpeakdata")
-    print(" 3. Excelfileloadcompound")
-    print(" 4. Match peak data by compound m/z")
-    print(" 5. matching resultsExcelfile")
+    print("mzML峰提取与化合物匹配程序")
+    print("版本: 7.0")
+    print("功能:")
+    print("  1. 从mzML文件提取峰数据")
+    print("  2. 从现有CSV文件加载峰数据")
+    print("  3. 从Excel文件加载化合物信息")
+    print("  4. 根据化合物m/z匹配峰数据")
+    print("  5. 生成详细的匹配结果Excel文件")
     print("=" * 70)
 
     main()

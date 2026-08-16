@@ -9,73 +9,55 @@ from datetime import datetime
 import matplotlib
 
 # ==================== 用户可调整参数（请在此修改） ====================
-# 输入文件路径（支持 .xlsx 或 .csv）
-input_file = r"C:\Users\姚钱磊\Desktop\补充实验预测\验证\预测结果\新建 Microsoft Excel 工作表.xlsx"   # 请修改为您的文件路径
-
-# 输出目录
-output_dir = "analysis_charts"
-
-# 是否包含保留指数分析（如果数据中有 rti_M3_pred 列，设为 True）
+input_file = r"C:\Users\姚钱磊\Desktop\补充实验预测\验证\预测结果\新建 Microsoft Excel 工作表.xlsx"
+output_dir = "analysis_charts_zw"
 include_ri = False
 
 # ==================== 全局样式设置 ====================
-# 全局字体大小（所有文字的基础大小）
 global_font_size = 16
-# 箱线图专用字体大小（单独设置，覆盖全局字体）
-boxplot_font_size = 20   # 可根据需要修改
-# 各图表尺寸（宽度, 高度），单位：英寸
-size_scatter_all = (10, 5)        # 综合散点图
-size_scatter_individual = (4, 4) # 单个模型散点图
-size_error_dist = (7, 6)         # 误差分布直方图
-size_violin = (8, 6)             # 小提琴图
-size_residual = (10, 6)           # 残差图
-size_metrics_bar = (5, 4)        # 指标条形图
-size_boxplot = (12, 6)            # 箱线图
-size_trend = (9 , 5)              # 趋势比较图
-size_correlation = (8, 6)        # 相关性热图
-size_rank = (12, 5)              # 排名比较图（组合图）
+boxplot_font_size = 20
+size_scatter_all = (10, 5)
+size_scatter_individual = (4, 4)
+size_error_dist = (7, 6)
+size_violin = (8, 6)
+size_residual = (10, 6)
+size_metrics_bar = (5, 4)
+size_boxplot = (12, 6)
+size_trend = (9 , 5)
+size_correlation = (8, 6)
+size_rank = (12, 5)
 
-# 散点图设置
 scatter_alpha = 0.7
 scatter_size = 50
 marker_shape = 'o'
-
-# 线条设置
 line_width = 2
 grid_alpha = 0.3
-
-# 条形图设置
 bar_width = 0.15
-
-# 输出分辨率
 dpi = 1200
-
-# 背景是否透明
 transparent_bg = True
 
-# 科研配色（深色、沉稳）
 colors = {
-    'rt_smrt_pred': '#012f48',   # 深蓝
-    'rt_M1_pred': '#669aba',     # 灰蓝
-    'rt_M2_pred': '#035830',     # 深绿
-    'rt_M3_pred': '#7a0101',     # 深红褐
-    'rt_actual': '#4c4c4c',      # 深灰
-    'rti_M3_pred': '#be1420'     # 红
+    'rt_smrt_pred': '#012f48',
+    'rt_M1_pred': '#7a0101',
+    'rt_M2_pred': '#035830',
+    'rt_M3_pred': '#669aba',
+    'rt_actual': '#4c4c4c',
+    'rti_M3_pred': '#be1420'
 }
 
-# 模型名称映射
 model_names = {
-    'rt_smrt_pred': 'Public Database Model',
-    'rt_M1_pred': 'Non Literature  Condition Model',
+    'rt_smrt_pred': 'Literature Model (60k)',
+    'rt_M1_pred': 'Non-Literature Model',
     'rt_M2_pred': 'Literature Condition Model',
-    'rt_M3_pred': 'PPG RI Model'
+    'rt_M3_pred': 'Literature RI Model'
 }
 # ================================================================
 
 os.makedirs(output_dir, exist_ok=True)
 
-# 全局字体设置
-plt.rcParams['font.family'] = 'Times New Roman'
+# ==================== 关键修改：中英文分别设置字体 ====================
+# 英文数字使用 Times New Roman，中文使用宋体 SimSun
+plt.rcParams['font.family'] = ['Times New Roman', 'SimSun']
 plt.rcParams['axes.unicode_minus'] = False
 plt.rcParams['font.size'] = global_font_size
 plt.rcParams['axes.labelsize'] = global_font_size + 2
@@ -85,12 +67,10 @@ plt.rcParams['xtick.labelsize'] = global_font_size
 plt.rcParams['ytick.labelsize'] = global_font_size
 plt.rcParams['lines.linewidth'] = line_width
 
-# 辅助函数：保存图表时处理 tight_layout 警告
 def save_fig(fig, path, **kwargs):
     try:
         fig.tight_layout()
     except:
-        # 如果 tight_layout 失败，使用 subplots_adjust
         fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
     fig.savefig(path, dpi=dpi, transparent=transparent_bg, bbox_inches='tight')
     plt.close(fig)
@@ -147,10 +127,10 @@ def create_scatter_all_models(df, metrics, selected_models, save_path):
             ax.plot(x_range, p(x_range), '--', color=color, linewidth=line_width*0.7, alpha=0.7)
     min_val = min(df['rt'].min(), min([df[m].min() for m in selected_models]))
     max_val = max(df['rt'].max(), max([df[m].max() for m in selected_models]))
-    ax.plot([min_val, max_val], [min_val, max_val], 'k:', alpha=0.3, label='Ideal line')
-    ax.set_xlabel('Actual Retention Time')
-    ax.set_ylabel('Predicted Retention Time')
-    ax.set_title('Scatter Plots of All Models')
+    ax.plot([min_val, max_val], [min_val, max_val], 'k:', alpha=0.3, label='理想线')
+    ax.set_xlabel('实际保留时间')
+    ax.set_ylabel('预测保留时间')
+    ax.set_title('所有模型散点图')
     ax.grid(True, alpha=grid_alpha)
     ax.legend(loc='upper left', bbox_to_anchor=(1,1), frameon=False)
     save_fig(fig, save_path)
@@ -173,15 +153,15 @@ def create_individual_scatter(df, metrics, model_key, save_path):
                 label=f'y={z[0]:.3f}x+{z[1]:.3f}')
     min_val = min(x[mask].min(), y[mask].min())
     max_val = max(x[mask].max(), y[mask].max())
-    ax.plot([min_val, max_val], [min_val, max_val], 'k:', alpha=0.3, label='Ideal line')
+    ax.plot([min_val, max_val], [min_val, max_val], 'k:', alpha=0.3, label='理想线')
     r2 = metrics[model_key]['R2']
     mae = metrics[model_key]['MAE']
     text = f'R² = {r2:.3f}\nMAE = {mae:.2f}' if not np.isnan(r2) else 'R² = NaN'
     ax.text(0.05, 0.95, text, transform=ax.transAxes, fontsize=global_font_size,
             verticalalignment='top', bbox=None)
-    ax.set_xlabel('Actual Retention Time')
-    ax.set_ylabel('Predicted Retention Time')
-    ax.set_title(f'Predictions of {name} ')
+    ax.set_xlabel('实际保留时间')
+    ax.set_ylabel('预测保留时间')
+    ax.set_title(f'{name} 的预测')
     ax.grid(True, alpha=grid_alpha)
     if 'regression_line' in locals():
         ax.legend(loc='lower right', frameon=False)
@@ -197,10 +177,10 @@ def create_error_distribution(df, selected_models, save_path):
         err = df[model] - df['rt']
         mask = ~err.isna()
         ax.hist(err[mask], bins=30, alpha=0.5, color=color, label=label, density=True, edgecolor='black')
-    ax.axvline(x=0, color='red', linestyle='--', linewidth=line_width, label='Zero error')
-    ax.set_xlabel('Prediction Error (Predicted - Actual)')
-    ax.set_ylabel('Density')
-    ax.set_title('Error Distribution')
+    ax.axvline(x=0, color='red', linestyle='--', linewidth=line_width, label='零误差')
+    ax.set_xlabel('预测误差 (预测值 - 实际值)')
+    ax.set_ylabel('密度')
+    ax.set_title('误差分布')
     ax.grid(True, alpha=grid_alpha)
     ax.legend(frameon=False)
     save_fig(fig, save_path)
@@ -222,8 +202,8 @@ def create_absolute_error_violin(df, selected_models, save_path):
         pc.set_alpha(0.7)
     ax.set_xticks(range(1, len(labels)+1))
     ax.set_xticklabels(labels, rotation=15)
-    ax.set_ylabel('Absolute Error')
-    ax.set_title('Absolute Error Distribution (Violin)')
+    ax.set_ylabel('绝对误差')
+    ax.set_title('绝对误差分布 (小提琴图)')
     ax.grid(True, alpha=grid_alpha, axis='y')
     save_fig(fig, save_path)
 
@@ -239,9 +219,9 @@ def create_residual_plot(df, selected_models, save_path):
         ax.scatter(df['rt'][mask], residual[mask], alpha=scatter_alpha*0.7,
                    s=scatter_size*0.7, color=color, label=label, marker=marker_shape)
     ax.axhline(y=0, color='red', linestyle='--', linewidth=line_width)
-    ax.set_xlabel('Actual Retention Time')
-    ax.set_ylabel('Residual')
-    ax.set_title('Residual Plot')
+    ax.set_xlabel('实际保留时间')
+    ax.set_ylabel('残差')
+    ax.set_title('残差图')
     ax.grid(True, alpha=grid_alpha)
     ax.legend(loc='upper left', bbox_to_anchor=(1,1), frameon=False)
     save_fig(fig, save_path)
@@ -259,16 +239,14 @@ def create_metrics_bar_chart(metrics, selected_models, metric_name, save_path):
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=15)
     ax.set_ylabel(metric_name)
-    ax.set_title(f'{metric_name} Comparison')
+    ax.set_title(f'{metric_name} 比较')
     ax.grid(True, alpha=grid_alpha, axis='y')
     if metric_name == 'R2':
-        ax.axhline(y=1.0, color='green', linestyle=':', alpha=0.5, label='Perfect')
-        ax.axhline(y=0.0, color='red', linestyle=':', alpha=0.5, label='Mean baseline')
+        ax.axhline(y=1.0, color='green', linestyle=':', alpha=0.5, label='完美')
+        ax.axhline(y=0.0, color='red', linestyle=':', alpha=0.5, label='均值基线')
     save_fig(fig, save_path)
 
-
 def create_boxplot(df, selected_models, save_path):
-    """箱线图（绝对误差），横坐标用字母简化，图例中注明模型名称和均值"""
     fig, ax = plt.subplots(figsize=size_boxplot)
     if transparent_bg:
         fig.patch.set_alpha(0)
@@ -282,7 +260,6 @@ def create_boxplot(df, selected_models, save_path):
         data.append(err[mask])
         means.append(np.mean(err[mask]))
 
-    # 横坐标标签：A, B, C, ...
     letters = [chr(ord('A') + i) for i in range(len(selected_models))]
 
     import matplotlib
@@ -291,29 +268,24 @@ def create_boxplot(df, selected_models, save_path):
     else:
         bp = ax.boxplot(data, labels=letters, patch_artist=True)
 
-    # 设置箱体颜色
     for i, box in enumerate(bp['boxes']):
         box.set_facecolor(colors[selected_models[i]])
         box.set_alpha(0.7)
 
-    # 创建图例：每个字母对应的模型名称和均值
-    legend_labels = [f'{letters[i]}: {model_names[model]} (Mean={means[i]:.3f})'
+    legend_labels = [f'{letters[i]}: {model_names[model]} (均值={means[i]:.3f})'
                      for i, model in enumerate(selected_models)]
-    # 使用自定义矩形色块作为图例句柄
     import matplotlib.patches as mpatches
     patches = [mpatches.Patch(color=colors[model], label=label, alpha=0.7)
                for model, label in zip(selected_models, legend_labels)]
     ax.legend(handles=patches, loc='upper left', bbox_to_anchor=(1, 1),
               fontsize=boxplot_font_size - 1, frameon=False)
 
-    # 坐标轴标签
-    ax.set_ylabel('Absolute Error', fontsize=boxplot_font_size)
-    ax.set_title('Absolute Error Boxplot', fontsize=boxplot_font_size + 2)
+    ax.set_ylabel('绝对误差', fontsize=boxplot_font_size)
+    ax.set_title('绝对误差箱线图', fontsize=boxplot_font_size + 2)
     ax.tick_params(axis='both', labelsize=boxplot_font_size)
     ax.set_xticklabels(letters, rotation=0, ha='center', fontsize=boxplot_font_size)
 
     ax.grid(True, alpha=grid_alpha, axis='y')
-    # 调整边距，防止图例被裁剪
     fig.subplots_adjust(right=0.7, bottom=0.15)
     save_fig(fig, save_path)
 
@@ -323,12 +295,12 @@ def create_trend_comparison(df, selected_models, save_path):
         fig.patch.set_alpha(0); ax.patch.set_alpha(0)
     df_sorted = df.sort_values('rt').dropna(subset=['rt'] + selected_models)
     x = range(len(df_sorted))
-    ax.plot(x, df_sorted['rt'], color=colors['rt_actual'], linewidth=line_width*1.5, label='Actual', zorder=5)
+    ax.plot(x, df_sorted['rt'], color=colors['rt_actual'], linewidth=line_width*1.5, label='实际值', zorder=5)
     for model in selected_models:
         ax.plot(x, df_sorted[model], '--', color=colors[model], alpha=0.7, linewidth=line_width, label=model_names[model])
-    ax.set_xlabel('Compound (sorted by Actual RT)')
-    ax.set_ylabel('Retention Time')
-    ax.set_title('Retention Time Trend Comparison')
+    ax.set_xlabel('化合物 (按实际保留时间排序)')
+    ax.set_ylabel('保留时间')
+    ax.set_title('保留时间趋势比较')
     ax.grid(True, alpha=grid_alpha)
     ax.legend(loc='upper left', bbox_to_anchor=(1,1), frameon=False)
     save_fig(fig, save_path)
@@ -338,10 +310,10 @@ def create_correlation_matrix(df, selected_models, include_ri, save_path):
     if include_ri and 'rti_M3_pred' in df.columns:
         cols.append('rti_M3_pred')
     corr = df[cols].dropna().corr()
-    rename = {'rt': 'Actual'}
+    rename = {'rt': '实际值'}
     rename.update(model_names)
     if include_ri:
-        rename['rti_M3_pred'] = 'Retention Index'
+        rename['rti_M3_pred'] = '保留指数'
     corr = corr.rename(index=rename, columns=rename)
     fig, ax = plt.subplots(figsize=size_correlation)
     if transparent_bg:
@@ -355,7 +327,7 @@ def create_correlation_matrix(df, selected_models, include_ri, save_path):
     ax.set_yticks(range(len(corr)))
     ax.set_xticklabels(corr.columns, rotation=45, ha='right')
     ax.set_yticklabels(corr.index)
-    ax.set_title('Correlation Matrix')
+    ax.set_title('相关性矩阵')
     fig.colorbar(im, ax=ax)
     save_fig(fig, save_path)
 
@@ -385,8 +357,8 @@ def create_rank_comparison(df, selected_models, save_path):
         ax1.text(bar.get_x()+bar.get_width()/2, val+0.05, f'{val:.2f}', ha='center', va='bottom')
     ax1.set_xticks(x)
     ax1.set_xticklabels(labels, rotation=15)
-    ax1.set_ylabel('Average Rank (1 = Best)')
-    ax1.set_title('Model Average Performance Rank')
+    ax1.set_ylabel('平均排名 (1=最佳)')
+    ax1.set_title('模型平均性能排名')
     ax1.grid(True, alpha=grid_alpha, axis='y')
     n_models = len(selected_models)
     rank_mat = np.zeros((n_models, n_models))
@@ -402,14 +374,13 @@ def create_rank_comparison(df, selected_models, save_path):
                          color='white' if rank_mat[i,j]>0.5 else 'black', fontsize=global_font_size-2)
     ax2.set_xticks(range(n_models))
     ax2.set_yticks(range(n_models))
-    ax2.set_xticklabels([f'Rank {i+1}' for i in range(n_models)])
+    ax2.set_xticklabels([f'排名 {i+1}' for i in range(n_models)])
     ax2.set_yticklabels([model_names[m] for m in selected_models])
-    ax2.set_xlabel('Rank Position')
-    ax2.set_ylabel('Prediction Model')
-    ax2.set_title('Rank Distribution Heatmap')
-    fig.colorbar(im, ax=ax2, label='Frequency')
+    ax2.set_xlabel('排名位置')
+    ax2.set_ylabel('预测模型')
+    ax2.set_title('排名分布热图')
+    fig.colorbar(im, ax=ax2, label='频率')
     save_fig(fig, save_path)
-
 
 def main():
     print(f"输入文件: {input_file}")
@@ -428,7 +399,6 @@ def main():
         m = metrics[model]
         print(f"{model_names[model]}: R²={m['R2']:.4f}, MAE={m['MAE']:.4f}, RMSE={m['RMSE']:.4f}")
 
-    # 打印绝对误差均值（箱线图相关）
     print("\n绝对误差均值（各模型）:")
     for model in selected_models:
         err = np.abs(df[model] - df['rt'])

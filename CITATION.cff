@@ -1,6 +1,6 @@
 cff-version: 1.2.0
-message: "If you use this code or data package, please cite the archived release and the associated manuscript."
-title: "PPG-RI Retention Prediction Supporting Code and Data"
+message: "If you use this code or data package, please cite the associated manuscript and this repository release."
+title: "PPG-RI Retention Prediction Supporting Code, Data, and Models"
 authors:
   - family-names: Yao
     given-names: Qianlei
@@ -12,7 +12,7 @@ authors:
     given-names: Ruifang
 type: software
 repository-code: "https://github.com/ALAN030302/ppg-ri-retention-prediction"
-abstract: "Supporting code, processed data, model configuration files, trained model artifacts, and analysis scripts for a PPG retention-index-driven graph neural network workflow for cross-platform retention time prediction."
+abstract: "Supporting code, processed data, trained model artifacts, and analysis scripts for a polypropylene glycol retention-index-driven graph neural network workflow for cross-platform retention time prediction."
 keywords:
   - retention time prediction
   - retention index
@@ -20,5 +20,5 @@ keywords:
   - graph neural network
   - Chemprop
 license: "LicenseRef-Pending"
-version: "v1.0.0"
-date-released: "2026-06-20"
+version: "v1.1.0"
+date-released: "2026-08-16"

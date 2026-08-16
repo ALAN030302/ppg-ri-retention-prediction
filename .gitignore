@@ -14,3 +14,5 @@ outputs/
 reruns/
 models/*/lightning_logs/
 models/*/checkpoints/
+.idea/
+__pycache__/

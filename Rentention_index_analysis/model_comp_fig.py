@@ -12,22 +12,22 @@ import matplotlib
 import matplotlib.font_manager as fm
 
 
-# Set fonts, 2
+# 设置中文字体，避免缺少上标2字符的问题
 def setup_chinese_font():
-    # , 2
+    # 尝试不同的中文字体，优先选择包含上标2字符的字体
     chinese_fonts = [
-        'Microsoft YaHei', # -
-        'Arial Unicode MS', # Unicode
-        'DejaVu Sans', # ,
-        'SimSun', #
-        'SimHei', # -
-        'NSimSun', #
-        'FangSong', #
-        'KaiTi', #
+        'Microsoft YaHei',  # 微软雅黑 - 通常包含上标字符
+        'Arial Unicode MS',  # 包含完整Unicode字符集
+        'DejaVu Sans',  # 开源字体，包含完整字符集
+        'SimSun',  # 宋体
+        'SimHei',  # 黑体 - 可能缺少上标字符
+        'NSimSun',  # 新宋体
+        'FangSong',  # 仿宋
+        'KaiTi',  # 楷体
         'sans-serif'
     ]
 
-    # translated note
+    # 查找系统可用的中文字体
     available_fonts = [f.name for f in fm.fontManager.ttflist]
     selected_font = None
 
@@ -37,20 +37,20 @@ def setup_chinese_font():
             break
 
     if selected_font:
-        # matplotlib
+        # 设置matplotlib全局字体
         plt.rcParams['font.sans-serif'] = [selected_font]
-        plt.rcParams['axes.unicode_minus'] = False #
+        plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
 
-        # SimHei, Use2
+        # 对于SimHei字体，避免使用上标2字符
         if 'SimHei' in selected_font:
-            print(f"Use: {selected_font} (: , UseR^2R²)")
+            print(f"使用字体: {selected_font} (注意: 此字体可能缺少上标字符，将使用R^2代替R²)")
         else:
-            print(f"Use: {selected_font}")
+            print(f"使用字体: {selected_font}")
     else:
-        print("Warning: , ")
+        print("警告: 未找到中文字体，可能无法正常显示中文")
 
 
-# translated note
+# 调用字体设置函数
 setup_chinese_font()
 
 matplotlib.use('TkAgg')
@@ -64,16 +64,16 @@ import sys
 class RetentionTimeAnalyzerApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("modelretention_timeanalysis")
+        self.root.title("四模型保留时间预测分析器")
         self.root.geometry("1600x1000")
 
         # Initialize variables
         self.df = None
         self.model_names = {
-            'rt_smrt_pred': '6model',
-            'rt_M1_pred': 'conditionmodel',
-            'rt_M2_pred': 'conditionmodel',
-            'rt_M3_pred': 'retention_indexmodel'
+            'rt_smrt_pred': '6万文献模型',
+            'rt_M1_pred': '非文献条件模型',
+            'rt_M2_pred': '文献条件模型',
+            'rt_M3_pred': '文献保留指数模型'
         }
 
         self.chart_settings = {
@@ -84,12 +84,12 @@ class RetentionTimeAnalyzerApp:
             'font_size': 10,
             'title_size': 12,
             'colors': {
-                'rt_smrt_pred': '#1f77b4', #
-                'rt_M1_pred': '#ff7f0e', #
-                'rt_M2_pred': '#2ca02c', #
-                'rt_M3_pred': '#d62728', #
-                'rt_actual': '#9467bd', #
-                'rti_M3_pred': '#8c564b' #
+                'rt_smrt_pred': '#1f77b4',  # 蓝色
+                'rt_M1_pred': '#ff7f0e',  # 橙色
+                'rt_M2_pred': '#2ca02c',  # 绿色
+                'rt_M3_pred': '#d62728',  # 红色
+                'rt_actual': '#9467bd',  # 紫色
+                'rti_M3_pred': '#8c564b'  # 棕色
             },
             'show_grid': True,
             'show_legend': True,
@@ -141,46 +141,46 @@ class RetentionTimeAnalyzerApp:
 
         # File control tab
         file_frame = ttk.Frame(control_notebook)
-        control_notebook.add(file_frame, text="file")
+        control_notebook.add(file_frame, text="文件")
         self.setup_file_controls(file_frame)
 
         # Analysis control tab
         analysis_frame = ttk.Frame(control_notebook)
-        control_notebook.add(analysis_frame, text="analysis")
+        control_notebook.add(analysis_frame, text="分析")
         self.setup_analysis_controls(analysis_frame)
 
         # Model selection tab
         model_frame = ttk.Frame(control_notebook)
-        control_notebook.add(model_frame, text="model")
+        control_notebook.add(model_frame, text="模型选择")
         self.setup_model_controls(model_frame)
 
         # Chart settings tab
         settings_frame = ttk.Frame(control_notebook)
-        control_notebook.add(settings_frame, text="chart")
+        control_notebook.add(settings_frame, text="图表设置")
         self.setup_chart_settings(settings_frame)
 
         # Results tab
         results_frame = ttk.Frame(control_notebook)
-        control_notebook.add(results_frame, text="results")
+        control_notebook.add(results_frame, text="结果")
         self.setup_results_display(results_frame)
 
     def setup_file_controls(self, parent):
         # File selection
-        file_group = ttk.LabelFrame(parent, text="datafile", padding=10)
+        file_group = ttk.LabelFrame(parent, text="数据文件", padding=10)
         file_group.pack(fill=tk.X, padx=5, pady=5)
 
-        ttk.Button(file_group, text="Excelfile...",
+        ttk.Button(file_group, text="浏览Excel文件...",
                    command=self.browse_file, width=20).pack(pady=5)
 
         self.file_path_var = tk.StringVar()
         ttk.Entry(file_group, textvariable=self.file_path_var,
                   state='readonly', width=50).pack(pady=5)
 
-        ttk.Button(file_group, text="loaddata",
+        ttk.Button(file_group, text="加载数据",
                    command=self.load_data, width=20).pack(pady=5)
 
         # Data preview
-        preview_group = ttk.LabelFrame(parent, text="data", padding=10)
+        preview_group = ttk.LabelFrame(parent, text="数据预览", padding=10)
         preview_group.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # Treeview for data preview
@@ -208,11 +208,11 @@ class RetentionTimeAnalyzerApp:
 
     def setup_analysis_controls(self, parent):
         # Analysis settings
-        settings_group = ttk.LabelFrame(parent, text="analysis", padding=10)
+        settings_group = ttk.LabelFrame(parent, text="分析设置", padding=10)
         settings_group.pack(fill=tk.X, padx=5, pady=5)
 
         # Metrics to calculate
-        ttk.Label(settings_group, text="calculate:").pack(anchor=tk.W, pady=2)
+        ttk.Label(settings_group, text="计算指标:").pack(anchor=tk.W, pady=2)
 
         self.metrics_vars = {
             'MAE': tk.BooleanVar(value=True),
@@ -233,11 +233,11 @@ class RetentionTimeAnalyzerApp:
             cb.grid(row=i // 4, column=i % 4, sticky=tk.W, padx=5, pady=2)
 
         # Analysis button
-        ttk.Button(settings_group, text="analysis",
+        ttk.Button(settings_group, text="运行分析",
                    command=self.run_analysis, width=20).pack(pady=10)
 
         # Chart type selection
-        chart_group = ttk.LabelFrame(parent, text="chart", padding=10)
+        chart_group = ttk.LabelFrame(parent, text="图表生成", padding=10)
         chart_group.pack(fill=tk.X, padx=5, pady=5)
 
         self.chart_vars = {
@@ -260,7 +260,7 @@ class RetentionTimeAnalyzerApp:
 
     def setup_model_controls(self, parent):
         """Setup model selection controls"""
-        model_group = ttk.LabelFrame(parent, text="comparemodel", padding=10)
+        model_group = ttk.LabelFrame(parent, text="选择比较的模型", padding=10)
         model_group.pack(fill=tk.X, padx=5, pady=5)
 
         # Checkboxes for each model
@@ -273,7 +273,7 @@ class RetentionTimeAnalyzerApp:
 
         # Include RI checkbox
         self.include_ri_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(model_group, text="retention_indexanalysis",
+        ttk.Checkbutton(model_group, text="包含保留指数分析",
                         variable=self.include_ri_var).pack(anchor=tk.W, padx=5, pady=5)
 
     def setup_chart_settings(self, parent):
@@ -294,37 +294,37 @@ class RetentionTimeAnalyzerApp:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Color settings
-        color_group = ttk.LabelFrame(scrollable_frame, text="", padding=10)
+        color_group = ttk.LabelFrame(scrollable_frame, text="颜色设置", padding=10)
         color_group.pack(fill=tk.X, padx=5, pady=5)
 
         colors = [
-            ('6model', 'rt_smrt_pred'),
-            ('conditionmodel', 'rt_M1_pred'),
-            ('conditionmodel', 'rt_M2_pred'),
-            ('retention_indexmodel', 'rt_M3_pred'),
-            ('', 'rt_actual'),
-            ('retention_index', 'rti_M3_pred')
+            ('6万文献模型', 'rt_smrt_pred'),
+            ('非文献条件模型', 'rt_M1_pred'),
+            ('文献条件模型', 'rt_M2_pred'),
+            ('文献保留指数模型', 'rt_M3_pred'),
+            ('实际值', 'rt_actual'),
+            ('保留指数', 'rti_M3_pred')
         ]
 
         self.color_buttons = {}
         for i, (label, key) in enumerate(colors):
             ttk.Label(color_group, text=label).grid(row=i, column=0, padx=5, pady=2)
-            btn = ttk.Button(color_group, text="", width=10,
+            btn = ttk.Button(color_group, text="更改", width=10,
                              command=lambda k=key: self.change_color(k))
             btn.grid(row=i, column=1, padx=5, pady=2)
             self.color_buttons[key] = btn
 
         # Alpha and size settings
-        style_group = ttk.LabelFrame(scrollable_frame, text="", padding=10)
+        style_group = ttk.LabelFrame(scrollable_frame, text="样式设置", padding=10)
         style_group.pack(fill=tk.X, padx=5, pady=5)
 
         settings = [
-            ('', 'scatter_alpha', 0.1, 1.0),
-            ('', 'scatter_size', 10, 200),
-            ('', 'line_width', 1, 5),
-            ('', 'font_size', 8, 20),
-            ('', 'grid_alpha', 0.0, 1.0),
-            ('', 'bar_width', 0.05, 0.3),
+            ('散点透明度', 'scatter_alpha', 0.1, 1.0),
+            ('散点大小', 'scatter_size', 10, 200),
+            ('线宽', 'line_width', 1, 5),
+            ('字体大小', 'font_size', 8, 20),
+            ('网格透明度', 'grid_alpha', 0.0, 1.0),
+            ('柱状图宽度', 'bar_width', 0.05, 0.3),
             ('DPI', 'dpi', 50, 300)
         ]
 
@@ -338,16 +338,16 @@ class RetentionTimeAnalyzerApp:
             self.style_widgets[key] = scale
 
         # Toggle settings
-        toggle_group = ttk.LabelFrame(scrollable_frame, text="", padding=10)
+        toggle_group = ttk.LabelFrame(scrollable_frame, text="显示选项", padding=10)
         toggle_group.pack(fill=tk.X, padx=5, pady=5)
 
         toggles = [
-            ('', 'show_grid'),
-            ('', 'show_legend'),
-            ('R^2', 'show_r_squared'),
-            ('', 'show_regression_line'),
-            ('', 'show_error_bars'),
-            ('', 'show_trend_line')
+            ('显示网格', 'show_grid'),
+            ('显示图例', 'show_legend'),
+            ('显示R^2值', 'show_r_squared'),
+            ('显示回归线', 'show_regression_line'),
+            ('显示误差条', 'show_error_bars'),
+            ('显示趋势线', 'show_trend_line')
         ]
 
         self.toggle_vars = {}
@@ -359,7 +359,7 @@ class RetentionTimeAnalyzerApp:
             self.toggle_vars[key] = var
 
         # Marker shape
-        marker_group = ttk.LabelFrame(scrollable_frame, text="", padding=10)
+        marker_group = ttk.LabelFrame(scrollable_frame, text="标记样式", padding=10)
         marker_group.pack(fill=tk.X, padx=5, pady=5)
 
         shapes = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h', 'H', '+', 'x', 'd', '|', '_']
@@ -378,14 +378,14 @@ class RetentionTimeAnalyzerApp:
         button_frame = ttk.Frame(scrollable_frame)
         button_frame.pack(fill=tk.X, padx=5, pady=10)
 
-        ttk.Button(button_frame, text="",
+        ttk.Button(button_frame, text="恢复默认",
                    command=self.reset_settings).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="save",
+        ttk.Button(button_frame, text="保存设置",
                    command=self.save_settings).pack(side=tk.LEFT, padx=5)
 
     def setup_results_display(self, parent):
         # Results text area
-        results_group = ttk.LabelFrame(parent, text="analysis results", padding=10)
+        results_group = ttk.LabelFrame(parent, text="分析结果", padding=10)
         results_group.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         self.results_text = scrolledtext.ScrolledText(results_group,
@@ -398,11 +398,11 @@ class RetentionTimeAnalyzerApp:
         button_frame = ttk.Frame(results_group)
         button_frame.pack(fill=tk.X, pady=5)
 
-        ttk.Button(button_frame, text="results",
+        ttk.Button(button_frame, text="复制结果",
                    command=self.copy_results).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="save",
+        ttk.Button(button_frame, text="保存为文本",
                    command=self.save_results_text).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="Save as CSV",
+        ttk.Button(button_frame, text="保存为CSV",
                    command=self.save_results_csv).pack(side=tk.LEFT, padx=5)
 
     def setup_right_panel(self):
@@ -412,7 +412,7 @@ class RetentionTimeAnalyzerApp:
 
         # Create initial tabs
         self.chart_tabs = {}
-        tab_names = ["compare", "model", "analysis", "", "", "rank"]
+        tab_names = ["综合比较", "单个模型", "误差分析", "指标对比", "相关性矩阵", "排名对比"]
         for tab_name in tab_names:
             tab = ttk.Frame(self.chart_notebook)
             self.chart_notebook.add(tab, text=tab_name)
@@ -422,18 +422,18 @@ class RetentionTimeAnalyzerApp:
         control_frame = ttk.Frame(self.right_panel)
         control_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        ttk.Button(control_frame, text="chart",
+        ttk.Button(control_frame, text="刷新图表",
                    command=self.refresh_charts).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="savechart",
+        ttk.Button(control_frame, text="保存当前图表",
                    command=self.save_current_chart).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="savechart",
+        ttk.Button(control_frame, text="保存所有图表",
                    command=self.save_all_charts).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="",
+        ttk.Button(control_frame, text="导出报告",
                    command=self.export_report).pack(side=tk.LEFT, padx=5)
 
     def browse_file(self):
         filename = filedialog.askopenfilename(
-            title="Excelfile",
+            title="选择Excel文件",
             filetypes=[
                 ("Excel files", "*.xlsx *.xls"),
                 ("CSV files", "*.csv"),
@@ -445,7 +445,7 @@ class RetentionTimeAnalyzerApp:
 
     def load_data(self):
         if not self.file_path_var.get():
-            messagebox.showwarning("Warning", "file！")
+            messagebox.showwarning("警告", "请先选择文件！")
             return
 
         try:
@@ -461,21 +461,21 @@ class RetentionTimeAnalyzerApp:
 
             missing_cols = [col for col in required_cols if col not in self.df.columns]
             if missing_cols:
-                messagebox.showerror("", f"column:\n{', '.join(missing_cols)}")
+                messagebox.showerror("错误", f"缺少必要的列:\n{', '.join(missing_cols)}")
                 return
 
             # Update preview tree
             self.update_preview_tree()
 
             # Enable analysis
-            messagebox.showinfo("",
-                                f"dataload！\n"
-                                f"data: {len(self.df)}\n"
-                                f"compound: {len(self.df)}\n"
-                                f"model: {', '.join(self.model_names.values())}")
+            messagebox.showinfo("成功",
+                                f"数据加载成功！\n"
+                                f"数据行数: {len(self.df)}\n"
+                                f"化合物数量: {len(self.df)}\n"
+                                f"可用模型: {', '.join(self.model_names.values())}")
 
         except Exception as e:
-            messagebox.showerror("", f"loadfilefailed:\n{str(e)}")
+            messagebox.showerror("错误", f"加载文件失败:\n{str(e)}")
 
     def update_preview_tree(self):
         # Clear existing items
@@ -497,7 +497,7 @@ class RetentionTimeAnalyzerApp:
 
     def run_analysis(self):
         if self.df is None:
-            messagebox.showwarning("Warning", "loaddata！")
+            messagebox.showwarning("警告", "请先加载数据！")
             return
 
         try:
@@ -508,7 +508,7 @@ class RetentionTimeAnalyzerApp:
             selected_models = [key for key, var in self.model_vars.items() if var.get()]
 
             if not selected_models:
-                messagebox.showwarning("Warning", "modelcompare！")
+                messagebox.showwarning("警告", "请至少选择一个模型进行比较！")
                 return
 
             # Calculate metrics for each selected model
@@ -524,7 +524,7 @@ class RetentionTimeAnalyzerApp:
                 # Calculate correlation between predicted RI and RT
                 ri_corr = self.df['rti_M3_pred'].corr(self.df['rt'])
                 self.metrics_results['rti_M3_pred'] = {
-                    'Method': 'retention_index',
+                    'Method': '保留指数预测',
                     'Pearson r': ri_corr,
                     'R^2': ri_corr ** 2
                 }
@@ -535,10 +535,10 @@ class RetentionTimeAnalyzerApp:
             # Generate charts
             self.generate_charts()
 
-            messagebox.showinfo("", "analysis！")
+            messagebox.showinfo("成功", "分析完成！")
 
         except Exception as e:
-            messagebox.showerror("", f"analysisfailed:\n{str(e)}")
+            messagebox.showerror("错误", f"分析失败:\n{str(e)}")
 
     def calculate_metrics(self, y_true, y_pred, method_name):
         metrics = {'Method': method_name}
@@ -546,11 +546,11 @@ class RetentionTimeAnalyzerApp:
         y_true = np.array(y_true)
         y_pred = np.array(y_pred)
 
-        # data
+        # 检查数据是否有效
         if len(y_true) != len(y_pred):
-            raise ValueError(f"data: y_true={len(y_true)}, y_pred={len(y_pred)}")
+            raise ValueError(f"数据长度不一致: y_true={len(y_true)}, y_pred={len(y_pred)}")
 
-        # NaN
+        # 移除NaN值
         valid_mask = ~np.isnan(y_true) & ~np.isnan(y_pred)
         y_true_valid = y_true[valid_mask]
         y_pred_valid = y_pred[valid_mask]
@@ -564,19 +564,19 @@ class RetentionTimeAnalyzerApp:
             metrics['IsConstant'] = False
             return metrics
 
-        # calculateR² - Use R² = 1 - (SS_res / SS_tot)
-        ss_res = np.sum((y_true_valid - y_pred_valid) ** 2) #
-        ss_tot = np.sum((y_true_valid - np.mean(y_true_valid)) ** 2) #
+        # 计算R² - 使用公式 R² = 1 - (SS_res / SS_tot)
+        ss_res = np.sum((y_true_valid - y_pred_valid) ** 2)  # 残差平方和
+        ss_tot = np.sum((y_true_valid - np.mean(y_true_valid)) ** 2)  # 总平方和
 
         if ss_tot == 0:
-            # y_true
+            # 如果y_true是常数
             if ss_res == 0:
-                r2 = 1.0 #
+                r2 = 1.0  # 完美预测
             else:
-                r2 = -np.inf #
+                r2 = -np.inf  # 比常数预测还差
         else:
             r2 = 1 - (ss_res / ss_tot)
-            # R²
+            # 确保R²在合理范围内
             if r2 < -1:
                 r2 = -1
             elif r2 > 1:
@@ -626,12 +626,12 @@ class RetentionTimeAnalyzerApp:
 
     def display_results(self):
         results_text = "=" * 100 + "\n"
-        results_text += "modelretention_timeanalysis\n"
+        results_text += "四模型保留时间预测对比分析\n"
         results_text += "=" * 100 + "\n\n"
 
-        results_text += f"data: {len(self.df)} compound\n"
-        results_text += f"data: {len(self.df.dropna(subset=['rt']))} \n"
-        results_text += f"analysisDate: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+        results_text += f"数据集大小: {len(self.df)} 个化合物\n"
+        results_text += f"有效数据点: {len(self.df.dropna(subset=['rt']))} 个\n"
+        results_text += f"分析日期: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
 
         # Check for constant models
         constant_models = []
@@ -640,7 +640,7 @@ class RetentionTimeAnalyzerApp:
                 constant_models.append(self.model_names.get(model_key, model_key))
 
         if constant_models:
-            results_text += "⚠️ Warning: model:\n"
+            results_text += "⚠️ 警告: 以下模型预测为常数:\n"
             for model in constant_models:
                 results_text += f"   • {model}\n"
             results_text += "\n"
@@ -662,11 +662,11 @@ class RetentionTimeAnalyzerApp:
         all_metrics_sorted = ordered_metrics + other_metrics
 
         # Create table header
-        header = f"{'':<20}"
+        header = f"{'指标':<20}"
         for model_key in self.metrics_results.keys():
             model_name = self.model_names.get(model_key, model_key)
             header += f" {model_name[:15]:>15}"
-        header += f" {'model':>15}\n"
+        header += f" {'最优模型':>15}\n"
 
         results_text += header
         results_text += "-" * (20 + 15 * (len(self.metrics_results) + 1)) + "\n"
@@ -695,10 +695,10 @@ class RetentionTimeAnalyzerApp:
             valid_values = [v for v in values if v is not None and not np.isnan(v)]
             if valid_values:
                 if metric in ['MAE', 'RMSE', 'MAPE (%)', 'MedianAE', 'MaxError', 'StdError']:
-                    # ,
+                    # 对于误差指标，越小越好
                     best_idx = np.argmin(valid_values)
                 else:  # R^2, Pearson r
-                    # ,
+                    # 对于相关系数指标，越大越好
                     best_idx = np.argmax(valid_values)
 
                 best_model = list(self.metrics_results.keys())[best_idx]
@@ -711,7 +711,7 @@ class RetentionTimeAnalyzerApp:
 
         # Add R² interpretation
         results_text += "\n" + "=" * 100 + "\n"
-        results_text += "R^2:\n"
+        results_text += "R^2值详细解释:\n"
         results_text += "=" * 100 + "\n"
 
         for model_key, metrics in self.metrics_results.items():
@@ -721,25 +721,25 @@ class RetentionTimeAnalyzerApp:
                 results_text += f"\n{model_name}: R^2 = {r2:.6f}\n"
 
                 if np.isnan(r2):
-                    results_text += " • R^2 = NaN: data, calculateR^2\n"
+                    results_text += "  • R^2 = NaN: 数据存在问题，无法计算R^2\n"
                 elif r2 == -np.inf:
-                    results_text += " • R^2 = -∞: modelUse\n"
+                    results_text += "  • R^2 = -∞: 模型预测比使用常数更差\n"
                 elif r2 < 0:
-                    results_text += f" • R^2 = {r2:.3f}: modelUse\n"
-                    results_text += f" (SS_res) = {np.sum((self.df['rt'] - self.df[model_key]) ** 2):.2f}\n"
-                    results_text += f" (SS_tot) = {np.sum((self.df['rt'] - np.mean(self.df['rt'])) ** 2):.2f}\n"
+                    results_text += f"  • R^2 = {r2:.3f}: 模型预测比使用简单平均值更差\n"
+                    results_text += f"    残差平方和(SS_res) = {np.sum((self.df['rt'] - self.df[model_key]) ** 2):.2f}\n"
+                    results_text += f"    总平方和(SS_tot) = {np.sum((self.df['rt'] - np.mean(self.df['rt'])) ** 2):.2f}\n"
                 elif r2 == 0:
-                    results_text += " • R^2 = 0: modelUse\n"
+                    results_text += "  • R^2 = 0: 模型预测与使用简单平均值相同\n"
                 elif r2 < 0.3:
-                    results_text += f" • R^2 = {r2:.3f}: ({round(r2 * 100, 1)}%)\n"
+                    results_text += f"  • R^2 = {r2:.3f}: 预测能力较弱 (解释{round(r2 * 100, 1)}%的方差)\n"
                 elif r2 < 0.7:
-                    results_text += f" • R^2 = {r2:.3f}: ({round(r2 * 100, 1)}%)\n"
+                    results_text += f"  • R^2 = {r2:.3f}: 预测能力中等 (解释{round(r2 * 100, 1)}%的方差)\n"
                 else:
-                    results_text += f" • R^2 = {r2:.3f}: ({round(r2 * 100, 1)}%)\n"
+                    results_text += f"  • R^2 = {r2:.3f}: 预测能力强 (解释{round(r2 * 100, 1)}%的方差)\n"
 
         # Summary conclusions
         results_text += "\n" + "=" * 100 + "\n"
-        results_text += "analysis:\n"
+        results_text += "综合分析结论:\n"
         results_text += "=" * 100 + "\n"
 
         # Count best performances
@@ -767,10 +767,10 @@ class RetentionTimeAnalyzerApp:
         # Sort models by performance
         sorted_models = sorted(performance_counts.items(), key=lambda x: x[1], reverse=True)
 
-        results_text += "modelrank:\n"
+        results_text += "模型性能排名:\n"
         for i, (model_key, count) in enumerate(sorted_models, 1):
             model_name = self.model_names.get(model_key, model_key)
-            results_text += f"{i}. {model_name}: {len(all_metrics_sorted)}, {count}\n"
+            results_text += f"{i}. {model_name}: 在{len(all_metrics_sorted)}个指标中，{count}个指标最优\n"
 
         self.results_text.insert(1.0, results_text)
 
@@ -798,7 +798,7 @@ class RetentionTimeAnalyzerApp:
 
     def create_comprehensive_charts(self, selected_models):
         """Create comprehensive comparison charts"""
-        tab = self.chart_tabs["compare"]
+        tab = self.chart_tabs["综合比较"]
 
         # Determine which charts to create
         charts_to_create = []
@@ -856,11 +856,11 @@ class RetentionTimeAnalyzerApp:
             if np.isnan(r2):
                 r2_label = f'{label} (R^2=NaN)'
             elif r2 < 0:
-                r2_label = f'{label} (R^2={r2:.3f}) - '
+                r2_label = f'{label} (R^2={r2:.3f}) - 比平均值差'
             else:
                 r2_label = f'{label} (R^2={r2:.3f})'
 
-            # NaN
+            # 移除NaN值
             valid_mask = ~self.df['rt'].isna() & ~self.df[model_key].isna()
             x_data = self.df.loc[valid_mask, 'rt']
             y_data = self.df.loc[valid_mask, model_key]
@@ -888,12 +888,12 @@ class RetentionTimeAnalyzerApp:
         # Add diagonal line
         min_val = min(self.df['rt'].min(), min([self.df[m].min() for m in selected_models]))
         max_val = max(self.df['rt'].max(), max([self.df[m].max() for m in selected_models]))
-        ax.plot([min_val, max_val], [min_val, max_val], 'k:', alpha=0.3, label='')
+        ax.plot([min_val, max_val], [min_val, max_val], 'k:', alpha=0.3, label='理想线')
 
         # Configure plot with explicit font properties
-        ax.set_xlabel('retention_time', fontsize=self.chart_settings['font_size'])
-        ax.set_ylabel('retention_time', fontsize=self.chart_settings['font_size'])
-        ax.set_title('model', fontsize=self.chart_settings['font_size'] + 2)
+        ax.set_xlabel('实际保留时间', fontsize=self.chart_settings['font_size'])
+        ax.set_ylabel('预测保留时间', fontsize=self.chart_settings['font_size'])
+        ax.set_title('四模型预测对比散点图', fontsize=self.chart_settings['font_size'] + 2)
 
         if self.chart_settings['show_grid']:
             ax.grid(True, alpha=self.chart_settings['grid_alpha'])
@@ -918,7 +918,7 @@ class RetentionTimeAnalyzerApp:
         ax.plot(x, df_valid.loc[sorted_idx, 'rt'].values,
                 color=self.chart_settings['colors']['rt_actual'],
                 linewidth=self.chart_settings['line_width'] * 1.5,
-                label='', zorder=5)
+                label='实际值', zorder=5)
 
         # Plot predictions
         for model_key in selected_models:
@@ -931,9 +931,9 @@ class RetentionTimeAnalyzerApp:
                     label=label)
 
         # Configure plot
-        ax.set_xlabel('compound (RT)', fontsize=self.chart_settings['font_size'])
-        ax.set_ylabel('retention_time', fontsize=self.chart_settings['font_size'])
-        ax.set_title('retention_time', fontsize=self.chart_settings['font_size'] + 2)
+        ax.set_xlabel('化合物 (按实际RT排序)', fontsize=self.chart_settings['font_size'])
+        ax.set_ylabel('保留时间', fontsize=self.chart_settings['font_size'])
+        ax.set_title('保留时间趋势对比', fontsize=self.chart_settings['font_size'] + 2)
 
         if self.chart_settings['show_grid']:
             ax.grid(True, alpha=self.chart_settings['grid_alpha'])
@@ -956,27 +956,27 @@ class RetentionTimeAnalyzerApp:
                 labels.append(self.model_names[model_key])
 
         if not error_data:
-            ax.text(0.5, 0.5, 'data', transform=ax.transAxes,
+            ax.text(0.5, 0.5, '无有效数据', transform=ax.transAxes,
                     ha='center', va='center', fontsize=self.chart_settings['font_size'])
             return
 
-        # Create boxplot - Matplotlib 3.9+
+        # Create boxplot - 修复Matplotlib 3.9+的兼容性问题
         try:
-            # Matplotlib 3.9+ Use tick_labels Parameters
+            # Matplotlib 3.9+ 使用 tick_labels 参数
             import matplotlib
             if hasattr(matplotlib, '__version__'):
                 version = matplotlib.__version__
                 if int(version.split('.')[0]) >= 3 and int(version.split('.')[1]) >= 9:
-                    # UseParameters
+                    # 使用新的参数名
                     bp = ax.boxplot(error_data, tick_labels=labels, patch_artist=True)
                 else:
-                    # UseParameters
+                    # 使用旧的参数名
                     bp = ax.boxplot(error_data, labels=labels, patch_artist=True)
             else:
-                # UseParameters
+                # 默认使用旧参数名
                 bp = ax.boxplot(error_data, labels=labels, patch_artist=True)
         except:
-            # ,
+            # 如果出错，尝试两种方式
             try:
                 bp = ax.boxplot(error_data, tick_labels=labels, patch_artist=True)
             except:
@@ -989,9 +989,9 @@ class RetentionTimeAnalyzerApp:
             box.set_alpha(0.7)
 
         # Configure plot
-        ax.set_xlabel('model', fontsize=self.chart_settings['font_size'])
-        ax.set_ylabel('', fontsize=self.chart_settings['font_size'])
-        ax.set_title('', fontsize=self.chart_settings['font_size'] + 2)
+        ax.set_xlabel('预测模型', fontsize=self.chart_settings['font_size'])
+        ax.set_ylabel('绝对误差', fontsize=self.chart_settings['font_size'])
+        ax.set_title('绝对误差分布箱线图', fontsize=self.chart_settings['font_size'] + 2)
 
         if self.chart_settings['show_grid']:
             ax.grid(True, alpha=self.chart_settings['grid_alpha'], axis='y')
@@ -1002,7 +1002,7 @@ class RetentionTimeAnalyzerApp:
             errors = np.abs(self.df.loc[valid_mask, model_key] - self.df.loc[valid_mask, 'rt'])
             if len(errors) > 0:
                 mean_error = errors.mean()
-                ax.text(i + 1, ax.get_ylim()[1] * 0.95, f': {mean_error:.3f}',
+                ax.text(i + 1, ax.get_ylim()[1] * 0.95, f'均值: {mean_error:.3f}',
                         ha='center', va='top', fontsize=self.chart_settings['font_size'] - 2)
 
     def create_individual_charts(self, selected_models):
@@ -1010,7 +1010,7 @@ class RetentionTimeAnalyzerApp:
         if not self.chart_vars['scatter_individual'].get():
             return
 
-        tab = self.chart_tabs["model"]
+        tab = self.chart_tabs["单个模型"]
 
         n_models = len(selected_models)
         n_cols = min(2, n_models)
@@ -1051,9 +1051,9 @@ class RetentionTimeAnalyzerApp:
         y_data = self.df.loc[valid_mask, model_key]
 
         if len(x_data) == 0:
-            ax.text(0.5, 0.5, 'data', transform=ax.transAxes,
+            ax.text(0.5, 0.5, '无有效数据', transform=ax.transAxes,
                     ha='center', va='center', fontsize=self.chart_settings['font_size'])
-            ax.set_title(f'{model_name}results', fontsize=self.chart_settings['font_size'] + 2)
+            ax.set_title(f'{model_name}预测结果', fontsize=self.chart_settings['font_size'] + 2)
             return
 
         # Scatter plot
@@ -1073,28 +1073,28 @@ class RetentionTimeAnalyzerApp:
         # Add diagonal line
         min_val = min(x_data.min(), y_data.min())
         max_val = max(x_data.max(), y_data.max())
-        ax.plot([min_val, max_val], [min_val, max_val], 'k:', alpha=0.3, label='')
+        ax.plot([min_val, max_val], [min_val, max_val], 'k:', alpha=0.3, label='理想线')
 
         # Add R^2 text
         if self.chart_settings['show_r_squared']:
             r2 = self.metrics_results[model_key].get('R^2', 0)
             if np.isnan(r2):
-                r2_text = f'R^2 = NaN (data)'
+                r2_text = f'R^2 = NaN (数据问题)'
                 box_color = 'gray'
             elif r2 == -np.inf:
-                r2_text = f'R^2 = -∞ ()'
+                r2_text = f'R^2 = -∞ (比常数预测差)'
                 box_color = 'red'
             elif r2 < 0:
-                r2_text = f'R^2 = {r2:.3f} ()'
+                r2_text = f'R^2 = {r2:.3f} (比平均值差)'
                 box_color = 'red'
             elif r2 < 0.3:
-                r2_text = f'R^2 = {r2:.3f} ()'
+                r2_text = f'R^2 = {r2:.3f} (弱)'
                 box_color = 'orange'
             elif r2 < 0.7:
-                r2_text = f'R^2 = {r2:.3f} ()'
+                r2_text = f'R^2 = {r2:.3f} (中等)'
                 box_color = 'yellow'
             else:
-                r2_text = f'R^2 = {r2:.3f} ()'
+                r2_text = f'R^2 = {r2:.3f} (强)'
                 box_color = 'green'
 
             ax.text(0.05, 0.95, r2_text,
@@ -1104,9 +1104,9 @@ class RetentionTimeAnalyzerApp:
                     bbox=dict(boxstyle='round', facecolor=box_color, alpha=0.5))
 
         # Configure plot
-        ax.set_xlabel('retention_time', fontsize=self.chart_settings['font_size'])
-        ax.set_ylabel('retention_time', fontsize=self.chart_settings['font_size'])
-        ax.set_title(f'{model_name}results', fontsize=self.chart_settings['font_size'] + 2)
+        ax.set_xlabel('实际保留时间', fontsize=self.chart_settings['font_size'])
+        ax.set_ylabel('预测保留时间', fontsize=self.chart_settings['font_size'])
+        ax.set_title(f'{model_name}预测结果', fontsize=self.chart_settings['font_size'] + 2)
 
         if self.chart_settings['show_grid']:
             ax.grid(True, alpha=self.chart_settings['grid_alpha'])
@@ -1121,7 +1121,7 @@ class RetentionTimeAnalyzerApp:
                 self.chart_vars['residual_plot'].get()):
             return
 
-        tab = self.chart_tabs["analysis"]
+        tab = self.chart_tabs["误差分析"]
 
         charts_to_create = []
         for chart_name, var in self.chart_vars.items():
@@ -1181,12 +1181,12 @@ class RetentionTimeAnalyzerApp:
         # Add vertical line at zero
         ax.axvline(x=0, color='red', linestyle='--',
                    linewidth=self.chart_settings['line_width'],
-                   label='')
+                   label='零误差')
 
         # Configure plot
-        ax.set_xlabel(' ( - )', fontsize=self.chart_settings['font_size'])
-        ax.set_ylabel('', fontsize=self.chart_settings['font_size'])
-        ax.set_title(' ()', fontsize=self.chart_settings['font_size'] + 2)
+        ax.set_xlabel('预测误差 (预测值 - 实际值)', fontsize=self.chart_settings['font_size'])
+        ax.set_ylabel('密度', fontsize=self.chart_settings['font_size'])
+        ax.set_title('误差分布直方图 (归一化)', fontsize=self.chart_settings['font_size'] + 2)
 
         if self.chart_settings['show_grid']:
             ax.grid(True, alpha=self.chart_settings['grid_alpha'])
@@ -1209,7 +1209,7 @@ class RetentionTimeAnalyzerApp:
                 labels.append(self.model_names[model_key])
 
         if not error_data:
-            ax.text(0.5, 0.5, 'data', transform=ax.transAxes,
+            ax.text(0.5, 0.5, '无有效数据', transform=ax.transAxes,
                     ha='center', va='center', fontsize=self.chart_settings['font_size'])
             return
 
@@ -1223,9 +1223,9 @@ class RetentionTimeAnalyzerApp:
             pc.set_alpha(0.7)
 
         # Configure plot
-        ax.set_xlabel('model', fontsize=self.chart_settings['font_size'])
-        ax.set_ylabel('', fontsize=self.chart_settings['font_size'])
-        ax.set_title('', fontsize=self.chart_settings['font_size'] + 2)
+        ax.set_xlabel('预测模型', fontsize=self.chart_settings['font_size'])
+        ax.set_ylabel('绝对误差', fontsize=self.chart_settings['font_size'])
+        ax.set_title('绝对误差分布小提琴图', fontsize=self.chart_settings['font_size'] + 2)
         ax.set_xticks(range(1, len(labels) + 1))
         ax.set_xticklabels(labels, rotation=15)
 
@@ -1255,9 +1255,9 @@ class RetentionTimeAnalyzerApp:
                    linewidth=self.chart_settings['line_width'])
 
         # Configure plot
-        ax.set_xlabel('retention_time', fontsize=self.chart_settings['font_size'])
-        ax.set_ylabel(' ( - )', fontsize=self.chart_settings['font_size'])
-        ax.set_title('', fontsize=self.chart_settings['font_size'] + 2)
+        ax.set_xlabel('实际保留时间', fontsize=self.chart_settings['font_size'])
+        ax.set_ylabel('残差 (预测值 - 实际值)', fontsize=self.chart_settings['font_size'])
+        ax.set_title('残差图', fontsize=self.chart_settings['font_size'] + 2)
 
         if self.chart_settings['show_grid']:
             ax.grid(True, alpha=self.chart_settings['grid_alpha'])
@@ -1271,7 +1271,7 @@ class RetentionTimeAnalyzerApp:
         if not self.chart_vars['metrics_bar'].get():
             return
 
-        tab = self.chart_tabs[""]
+        tab = self.chart_tabs["指标对比"]
 
         # Get metrics to display
         metrics_to_show = []
@@ -1323,7 +1323,7 @@ class RetentionTimeAnalyzerApp:
         values = []
         labels = []
 
-        # R^2R^2
+        # 将显示标签中的R^2转换为内部键名R^2
         internal_metric = 'R^2' if metric == 'R^2' else metric
 
         for model_key in selected_models:
@@ -1358,9 +1358,9 @@ class RetentionTimeAnalyzerApp:
                         fontsize=self.chart_settings['font_size'] - 2)
 
         # Configure plot
-        ax.set_xlabel('model', fontsize=self.chart_settings['font_size'])
+        ax.set_xlabel('预测模型', fontsize=self.chart_settings['font_size'])
         ax.set_ylabel(metric, fontsize=self.chart_settings['font_size'])
-        ax.set_title(f'{metric}', fontsize=self.chart_settings['font_size'] + 2)
+        ax.set_title(f'{metric}对比', fontsize=self.chart_settings['font_size'] + 2)
         ax.set_xticks(x)
         ax.set_xticklabels(labels, rotation=15)
 
@@ -1369,8 +1369,8 @@ class RetentionTimeAnalyzerApp:
 
         # Add reference lines
         if metric == 'R^2':
-            ax.axhline(y=1.0, color='green', linestyle=':', alpha=0.5, label='')
-            ax.axhline(y=0.0, color='red', linestyle=':', alpha=0.5, label='')
+            ax.axhline(y=1.0, color='green', linestyle=':', alpha=0.5, label='完美预测')
+            ax.axhline(y=0.0, color='red', linestyle=':', alpha=0.5, label='与平均值相同')
         elif metric in ['MAE', 'RMSE', 'MAPE (%)', 'MedianAE', 'MaxError', 'StdError']:
             ax.axhline(y=0.0, color='black', linestyle='-', linewidth=0.5)
 
@@ -1379,7 +1379,7 @@ class RetentionTimeAnalyzerApp:
         if not self.chart_vars['correlation_matrix'].get():
             return
 
-        tab = self.chart_tabs[""]
+        tab = self.chart_tabs["相关性矩阵"]
 
         # Prepare data for correlation matrix
         columns = ['rt'] + selected_models
@@ -1392,9 +1392,9 @@ class RetentionTimeAnalyzerApp:
         if len(df_valid) == 0:
             fig = Figure(figsize=(8, 6), dpi=self.chart_settings['dpi'])
             ax = fig.add_subplot(111)
-            ax.text(0.5, 0.5, 'datacalculate', transform=ax.transAxes,
+            ax.text(0.5, 0.5, '无有效数据计算相关性', transform=ax.transAxes,
                     ha='center', va='center', fontsize=self.chart_settings['font_size'])
-            ax.set_title('', fontsize=self.chart_settings['font_size'] + 2)
+            ax.set_title('相关性矩阵', fontsize=self.chart_settings['font_size'] + 2)
 
             canvas = FigureCanvasTkAgg(fig, master=tab)
             canvas.draw()
@@ -1404,10 +1404,10 @@ class RetentionTimeAnalyzerApp:
         corr_data = df_valid.corr()
 
         # Rename columns for display
-        display_names = {'rt': ''}
+        display_names = {'rt': '实际值'}
         display_names.update(self.model_names)
         if 'rti_M3_pred' in columns:
-            display_names['rti_M3_pred'] = 'retention_index'
+            display_names['rti_M3_pred'] = '保留指数'
 
         corr_data.index = [display_names.get(col, col) for col in corr_data.index]
         corr_data.columns = [display_names.get(col, col) for col in corr_data.columns]
@@ -1431,7 +1431,7 @@ class RetentionTimeAnalyzerApp:
         ax.set_yticks(range(len(corr_data)))
         ax.set_xticklabels(corr_data.columns, rotation=45, ha='right')
         ax.set_yticklabels(corr_data.index)
-        ax.set_title('', fontsize=self.chart_settings['font_size'] + 2)
+        ax.set_title('相关性矩阵', fontsize=self.chart_settings['font_size'] + 2)
 
         # Add colorbar
         fig.colorbar(im, ax=ax)
@@ -1456,7 +1456,7 @@ class RetentionTimeAnalyzerApp:
         if not self.chart_vars['rank_comparison'].get():
             return
 
-        tab = self.chart_tabs["rank"]
+        tab = self.chart_tabs["排名对比"]
 
         # Remove rows with NaN values
         df_valid = self.df[['rt'] + selected_models].dropna()
@@ -1464,7 +1464,7 @@ class RetentionTimeAnalyzerApp:
         if len(df_valid) == 0:
             fig = Figure(figsize=(12, 5), dpi=self.chart_settings['dpi'])
             ax = fig.add_subplot(111)
-            ax.text(0.5, 0.5, 'datacalculaterank', transform=ax.transAxes,
+            ax.text(0.5, 0.5, '无有效数据计算排名', transform=ax.transAxes,
                     ha='center', va='center', fontsize=self.chart_settings['font_size'])
 
             canvas = FigureCanvasTkAgg(fig, master=tab)
@@ -1519,9 +1519,9 @@ class RetentionTimeAnalyzerApp:
                      f'{height:.2f}', ha='center', va='bottom',
                      fontsize=self.chart_settings['font_size'] - 2)
 
-        ax1.set_xlabel('model', fontsize=self.chart_settings['font_size'])
-        ax1.set_ylabel('rank (1=)', fontsize=self.chart_settings['font_size'])
-        ax1.set_title('modelrank', fontsize=self.chart_settings['font_size'] + 2)
+        ax1.set_xlabel('预测模型', fontsize=self.chart_settings['font_size'])
+        ax1.set_ylabel('平均排名 (1=最优)', fontsize=self.chart_settings['font_size'])
+        ax1.set_title('模型平均性能排名', fontsize=self.chart_settings['font_size'] + 2)
         ax1.set_xticks(x)
         ax1.set_xticklabels(labels, rotation=15)
 
@@ -1553,15 +1553,15 @@ class RetentionTimeAnalyzerApp:
                              color='white' if value > 0.5 else 'black',
                              fontsize=self.chart_settings['font_size'] - 2)
 
-        ax2.set_xlabel('rank', fontsize=self.chart_settings['font_size'])
-        ax2.set_ylabel('model', fontsize=self.chart_settings['font_size'])
-        ax2.set_title('rank', fontsize=self.chart_settings['font_size'] + 2)
+        ax2.set_xlabel('排名位置', fontsize=self.chart_settings['font_size'])
+        ax2.set_ylabel('预测模型', fontsize=self.chart_settings['font_size'])
+        ax2.set_title('排名分布热图', fontsize=self.chart_settings['font_size'] + 2)
         ax2.set_xticks(range(len(selected_models)))
         ax2.set_yticks(range(len(selected_models)))
-        ax2.set_xticklabels([f'{i + 1}' for i in range(len(selected_models))])
+        ax2.set_xticklabels([f'第{i + 1}名' for i in range(len(selected_models))])
         ax2.set_yticklabels([self.model_names[m] for m in selected_models])
 
-        fig.colorbar(im, ax=ax2, label='')
+        fig.colorbar(im, ax=ax2, label='频率')
 
         fig.tight_layout()
 
@@ -1582,21 +1582,21 @@ class RetentionTimeAnalyzerApp:
         """Refresh all charts with current settings"""
         if self.df is not None and hasattr(self, 'metrics_results'):
             self.generate_charts()
-            messagebox.showinfo("", "chartUse！")
+            messagebox.showinfo("成功", "图表已使用当前设置刷新！")
         else:
-            messagebox.showwarning("Warning", "analysis！")
+            messagebox.showwarning("警告", "请先运行分析！")
 
     def save_current_chart(self):
         """Save the currently active chart"""
         current_tab = self.chart_notebook.tab(self.chart_notebook.select(), "text")
 
         fig_attributes = {
-            "compare": ('current_comprehensive_fig', 'current_comprehensive_canvas'),
-            "model": ('current_individual_fig', 'current_individual_canvas'),
-            "analysis": ('current_error_fig', 'current_error_canvas'),
-            "": ('current_metrics_fig', 'current_metrics_canvas'),
-            "": ('current_correlation_fig', 'current_correlation_canvas'),
-            "rank": ('current_rank_fig', 'current_rank_canvas')
+            "综合比较": ('current_comprehensive_fig', 'current_comprehensive_canvas'),
+            "单个模型": ('current_individual_fig', 'current_individual_canvas'),
+            "误差分析": ('current_error_fig', 'current_error_canvas'),
+            "指标对比": ('current_metrics_fig', 'current_metrics_canvas'),
+            "相关性矩阵": ('current_correlation_fig', 'current_correlation_canvas'),
+            "排名对比": ('current_rank_fig', 'current_rank_canvas')
         }
 
         if current_tab in fig_attributes:
@@ -1604,14 +1604,14 @@ class RetentionTimeAnalyzerApp:
             if hasattr(self, fig_attr):
                 fig = getattr(self, fig_attr)
             else:
-                messagebox.showwarning("Warning", "savechart！")
+                messagebox.showwarning("警告", "当前标签页没有可保存的图表！")
                 return
         else:
-            messagebox.showwarning("Warning", "savechart！")
+            messagebox.showwarning("警告", "当前标签页没有可保存的图表！")
             return
 
         filename = filedialog.asksaveasfilename(
-            title="savechart",
+            title="保存图表",
             defaultextension=".png",
             filetypes=[
                 ("PNG files", "*.png"),
@@ -1625,13 +1625,13 @@ class RetentionTimeAnalyzerApp:
         if filename:
             try:
                 fig.savefig(filename, dpi=self.chart_settings['dpi'], bbox_inches='tight')
-                messagebox.showinfo("", f"chartsave:\n{filename}")
+                messagebox.showinfo("成功", f"图表已保存到:\n{filename}")
             except Exception as e:
-                messagebox.showerror("", f"savechartfailed:\n{str(e)}")
+                messagebox.showerror("错误", f"保存图表失败:\n{str(e)}")
 
     def save_all_charts(self):
         """Save all charts to a directory"""
-        directory = filedialog.askdirectory(title="savechartdirectory")
+        directory = filedialog.askdirectory(title="选择保存图表的目录")
 
         if not directory:
             return
@@ -1642,12 +1642,12 @@ class RetentionTimeAnalyzerApp:
 
             # Save all available charts
             chart_types = [
-                ("compare", 'current_comprehensive_fig'),
-                ("model", 'current_individual_fig'),
-                ("analysis", 'current_error_fig'),
-                ("", 'current_metrics_fig'),
-                ("", 'current_correlation_fig'),
-                ("rank", 'current_rank_fig')
+                ("综合比较", 'current_comprehensive_fig'),
+                ("单个模型", 'current_individual_fig'),
+                ("误差分析", 'current_error_fig'),
+                ("指标对比", 'current_metrics_fig'),
+                ("相关性矩阵", 'current_correlation_fig'),
+                ("排名对比", 'current_rank_fig')
             ]
 
             for chart_name, fig_attr in chart_types:
@@ -1658,22 +1658,22 @@ class RetentionTimeAnalyzerApp:
                     saved_files.append(f"{chart_name}.png")
 
             if saved_files:
-                messagebox.showinfo("", f"chartsave:\n{directory}\n\n"
-                                            f"savefile:\n" + "\n".join(saved_files))
+                messagebox.showinfo("成功", f"所有图表已保存到:\n{directory}\n\n"
+                                            f"保存的文件:\n" + "\n".join(saved_files))
             else:
-                messagebox.showwarning("Warning", "savechart！")
+                messagebox.showwarning("警告", "没有可保存的图表！")
 
         except Exception as e:
-            messagebox.showerror("", f"savechartfailed:\n{str(e)}")
+            messagebox.showerror("错误", f"保存图表失败:\n{str(e)}")
 
     def export_report(self):
         """Export a complete analysis report"""
         if self.df is None or not hasattr(self, 'metrics_results'):
-            messagebox.showwarning("Warning", "analysis！")
+            messagebox.showwarning("警告", "请先运行分析！")
             return
 
         filename = filedialog.asksaveasfilename(
-            title="save",
+            title="保存报告",
             defaultextension=".pdf",
             filetypes=[
                 ("PDF files", "*.pdf"),
@@ -1703,10 +1703,10 @@ class RetentionTimeAnalyzerApp:
                 with open(filename, 'w', encoding='utf-8') as f:
                     f.write(results_text)
 
-            messagebox.showinfo("", f"save:\n{filename}")
+            messagebox.showinfo("成功", f"报告已保存到:\n{filename}")
 
         except Exception as e:
-            messagebox.showerror("", f"savefailed:\n{str(e)}")
+            messagebox.showerror("错误", f"保存报告失败:\n{str(e)}")
 
     def save_html_report(self, filename, results_text):
         """Save report as HTML"""
@@ -1746,7 +1746,7 @@ class RetentionTimeAnalyzerApp:
         <!DOCTYPE html>
         <html>
         <head>
-            <title>modelretention_timeanalysis</title>
+            <title>四模型保留时间预测分析报告</title>
             <style>
                 body {{ font-family: 'Microsoft YaHei', Arial, sans-serif; margin: 40px; line-height: 1.6; }}
                 h1 {{ color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }}
@@ -1769,16 +1769,16 @@ class RetentionTimeAnalyzerApp:
         </head>
         <body>
             <div class="container">
-                <h1>modelretention_timeanalysis</h1>
-                <p><strong>:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-                <p><strong>data:</strong> {len(self.df)} compound</p>
-                <p><strong>analysismodel:</strong> {len(self.metrics_results)} </p>
+                <h1>四模型保留时间预测分析报告</h1>
+                <p><strong>生成时间:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                <p><strong>数据集大小:</strong> {len(self.df)} 个化合物</p>
+                <p><strong>分析模型数:</strong> {len(self.metrics_results)} 个</p>
 
-                {"<div class='warning'><strong>⚠️ Warning:</strong> model！</div>"
+                {"<div class='warning'><strong>⚠️ 警告:</strong> 存在常数预测模型！</div>"
         if any(m.get('IsConstant', False) for m in self.metrics_results.values()) else ""}
 
                 <div class="summary">
-                    <h2>model</h2>
+                    <h2>模型概览</h2>
                     {"".join([f'<div class="model-card" style="background-color: {self.chart_settings["colors"][model_key]};">'
                               f'<h3>{self.model_names[model_key]}</h3>'
                               f'<p>R^2: {self.metrics_results[model_key].get("R^2", "N/A"):.4f}</p>'
@@ -1787,11 +1787,11 @@ class RetentionTimeAnalyzerApp:
                               for model_key in selected_models])}
                 </div>
 
-                <h2></h2>
+                <h2>详细指标对比</h2>
                 <table class="metrics-table">
                     <thead>
                         <tr>
-                            <th></th>
+                            <th>指标</th>
                             {"".join([f'<th>{self.model_names[model_key]}</th>' for model_key in selected_models])}
                         </tr>
                     </thead>
@@ -1800,12 +1800,12 @@ class RetentionTimeAnalyzerApp:
                     </tbody>
                 </table>
 
-                <h2>analysis results</h2>
+                <h2>分析结果摘要</h2>
                 <pre style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; overflow-x: auto;">{results_text}</pre>
 
                 <div class="footer">
-                    <p>: modelretention_timeanalysis v1.0</p>
-                    <p>© 2024 retention_timeanalysis</p>
+                    <p>报告生成工具: 四模型保留时间预测分析器 v1.0</p>
+                    <p>© 2024 保留时间分析系统</p>
                 </div>
             </div>
         </body>
@@ -1822,11 +1822,11 @@ class RetentionTimeAnalyzerApp:
 
         with open(txt_filename, 'w', encoding='utf-8') as f:
             f.write("=" * 100 + "\n")
-            f.write("modelretention_timeanalysis\n")
+            f.write("四模型保留时间预测分析报告\n")
             f.write("=" * 100 + "\n\n")
-            f.write(f": {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"data: {len(self.df)} compound\n")
-            f.write(f"analysismodel: {len(self.metrics_results)} \n\n")
+            f.write(f"生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"数据集大小: {len(self.df)} 个化合物\n")
+            f.write(f"分析模型数: {len(self.metrics_results)} 个\n\n")
 
             # Check for constant models
             constant_models = []
@@ -1835,27 +1835,27 @@ class RetentionTimeAnalyzerApp:
                     constant_models.append(self.model_names.get(model_key, model_key))
 
             if constant_models:
-                f.write("⚠️ Warning: model:\n")
+                f.write("⚠️ 警告: 以下模型预测为常数:\n")
                 for model in constant_models:
                     f.write(f"   • {model}\n")
                 f.write("\n")
 
             f.write(results_text)
 
-        messagebox.showinfo("", "PDF(reportlab). \n"
-                                    "saveVersion:\n" + txt_filename)
+        messagebox.showinfo("提示", "PDF生成需要额外的库(reportlab)。\n"
+                                    "已保存文本版本到:\n" + txt_filename)
 
     def copy_results(self):
         """Copy results to clipboard"""
         results = self.results_text.get(1.0, tk.END)
         self.root.clipboard_clear()
         self.root.clipboard_append(results)
-        messagebox.showinfo("", "results！")
+        messagebox.showinfo("成功", "结果已复制到剪贴板！")
 
     def save_results_text(self):
         """Save results as text file"""
         filename = filedialog.asksaveasfilename(
-            title="saveresults",
+            title="保存结果",
             defaultextension=".txt",
             filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
         )
@@ -1864,18 +1864,18 @@ class RetentionTimeAnalyzerApp:
             try:
                 with open(filename, 'w', encoding='utf-8') as f:
                     f.write(self.results_text.get(1.0, tk.END))
-                messagebox.showinfo("", f"resultssave:\n{filename}")
+                messagebox.showinfo("成功", f"结果已保存到:\n{filename}")
             except Exception as e:
-                messagebox.showerror("", f"saveresultsfailed:\n{str(e)}")
+                messagebox.showerror("错误", f"保存结果失败:\n{str(e)}")
 
     def save_results_csv(self):
         """Save metrics as CSV"""
         if not hasattr(self, 'metrics_results'):
-            messagebox.showwarning("Warning", "saveresults！")
+            messagebox.showwarning("警告", "没有可保存的结果！")
             return
 
         filename = filedialog.asksaveasfilename(
-            title="saveCSV",
+            title="保存指标为CSV",
             defaultextension=".csv",
             filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
         )
@@ -1886,14 +1886,14 @@ class RetentionTimeAnalyzerApp:
                 metrics_list = []
                 for model_key, metrics in self.metrics_results.items():
                     metrics_dict = metrics.copy()
-                    metrics_dict['modelname'] = self.model_names.get(model_key, model_key)
+                    metrics_dict['模型名称'] = self.model_names.get(model_key, model_key)
                     metrics_list.append(metrics_dict)
 
                 df_results = pd.DataFrame(metrics_list)
                 df_results.to_csv(filename, index=False, encoding='utf-8-sig')
-                messagebox.showinfo("", f"save:\n{filename}")
+                messagebox.showinfo("成功", f"指标已保存到:\n{filename}")
             except Exception as e:
-                messagebox.showerror("", f"savefailed:\n{str(e)}")
+                messagebox.showerror("错误", f"保存指标失败:\n{str(e)}")
 
     def change_color(self, color_key):
         """Change color setting"""
@@ -1968,12 +1968,12 @@ class RetentionTimeAnalyzerApp:
             if key == 'marker_shape':
                 self.marker_var.set(value)
 
-        messagebox.showinfo("", "！")
+        messagebox.showinfo("设置已重置", "所有设置已恢复为默认值！")
 
     def save_settings(self):
         """Save chart settings to file"""
         filename = filedialog.asksaveasfilename(
-            title="save",
+            title="保存设置",
             defaultextension=".json",
             filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
         )
@@ -1982,9 +1982,9 @@ class RetentionTimeAnalyzerApp:
             try:
                 with open(filename, 'w') as f:
                     json.dump(self.chart_settings, f, indent=4, ensure_ascii=False)
-                messagebox.showinfo("", f"save:\n{filename}")
+                messagebox.showinfo("成功", f"设置已保存到:\n{filename}")
             except Exception as e:
-                messagebox.showerror("", f"savefailed:\n{str(e)}")
+                messagebox.showerror("错误", f"保存设置失败:\n{str(e)}")
 
     def load_settings(self):
         """Load chart settings from file"""

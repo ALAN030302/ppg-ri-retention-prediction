@@ -367,8 +367,8 @@ class RetentionTimeAnalyzerApp:
                 self.df = pd.read_excel(self.file_path_var.get())
 
             # Rename columns for consistency
-            if 'retention_index' in self.df.columns:
-                self.df = self.df.rename(columns={'retention_index': 'rt_RI_pred'})
+            if '通过保留指数转换的时间' in self.df.columns:
+                self.df = self.df.rename(columns={'通过保留指数转换的时间': 'rt_RI_pred'})
 
             # Update preview tree
             self.update_preview_tree()
@@ -407,7 +407,7 @@ class RetentionTimeAnalyzerApp:
             # Clear previous results
             self.results_text.delete(1.0, tk.END)
 
-            # Calculate metrics - Fix the R² calculation here
+            # Calculate metrics - 这里修复R²计算
             self.metrics_rt_pred = self.calculate_metrics(
                 self.df['rt'], self.df['rt_pred'],
                 'Direct Model Prediction'
@@ -434,18 +434,18 @@ class RetentionTimeAnalyzerApp:
         y_true = np.array(y_true)
         y_pred = np.array(y_pred)
 
-        # Check whether y_pred is constant
+        # 检查y_pred是否是常数
         if np.all(y_pred == y_pred[0]):
-            # If it is constant, the R² calculation can fail; use a custom calculation
+            # 如果是常数，R²计算会出问题，我们使用自定义计算
             ss_res = np.sum((y_true - y_pred) ** 2)
             ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
             if ss_tot == 0:
-                r2 = 1.0 # If y_true is also constant, this is a perfect prediction
+                r2 = 1.0  # 如果y_true也是常数，完美预测
             else:
                 r2 = 1 - (ss_res / ss_tot)
-                # R² can be negative, indicating performance worse than mean prediction
+                # R²可以为负，表示比平均值预测还差
         else:
-            # Use sklearn r2_score
+            # 使用sklearn的r2_score
             r2 = r2_score(y_true, y_pred)
 
         metrics['R²'] = r2
@@ -457,7 +457,7 @@ class RetentionTimeAnalyzerApp:
             metrics['RMSE'] = np.sqrt(mean_squared_error(y_true, y_pred))
 
         if self.metrics_vars['Pearson'].get():
-            # Check whether the data are suitable for calculating correlation coefficients
+            # 检查数据是否适合计算相关系数
             if len(y_true) > 1 and np.std(y_true) > 0 and np.std(y_pred) > 0:
                 pearson_r, p_value = stats.pearsonr(y_true, y_pred)
                 metrics['Pearson r'] = pearson_r
@@ -468,7 +468,7 @@ class RetentionTimeAnalyzerApp:
 
         if self.metrics_vars['MAPE'].get():
             # Mean Absolute Percentage Error
-            # Avoid division by zero
+            # 避免除以0
             mask = y_true != 0
             if np.any(mask):
                 mape = np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100
@@ -484,7 +484,7 @@ class RetentionTimeAnalyzerApp:
         metrics['Max Error'] = np.max(np.abs(y_true - y_pred))
         metrics['Std Error'] = np.std(y_true - y_pred)
 
-        # Add a flag indicating whether the model is constant
+        # 添加模型是否常数的标记
         metrics['Is Constant'] = np.all(y_pred == y_pred[0])
         if metrics['Is Constant']:
             metrics['Constant Value'] = y_pred[0]
@@ -500,7 +500,7 @@ class RetentionTimeAnalyzerApp:
         results_text += f"Dataset size: {len(self.df)} compounds\n"
         results_text += f"Analysis date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
 
-        # Check whether the direct model is constant
+        # 检查直接模型是否为常数
         if self.metrics_rt_pred.get('Is Constant', False):
             results_text += "⚠️ WARNING: Direct Model predictions are CONSTANT!\n"
             results_text += f"   All predictions = {self.metrics_rt_pred.get('Constant Value', 'N/A'):.4f}\n\n"
@@ -513,7 +513,7 @@ class RetentionTimeAnalyzerApp:
         all_metrics = set()
         for metrics in metrics_list:
             all_metrics.update(metrics.keys())
-        # Remove columns that do not need to be displayed
+        # 移除不需要显示的列
         exclude_cols = {'Method', 'Is Constant', 'Constant Value', 'Pearson p'}
         all_metrics = all_metrics - exclude_cols
 
@@ -554,7 +554,7 @@ class RetentionTimeAnalyzerApp:
             results_text += f"  Direct Model: {self.metrics_rt_pred['Pearson p']:.4e}\n"
             results_text += f"  RI-based: {self.metrics_rt_RI['Pearson p']:.4e}\n"
 
-        # R² value interpretation
+        # R²值解释
         results_text += "\n" + "=" * 80 + "\n"
         results_text += "R² VALUE INTERPRETATION:\n"
         results_text += "=" * 80 + "\n"
@@ -607,7 +607,7 @@ class RetentionTimeAnalyzerApp:
                 val1 = self.metrics_rt_pred[metric]
                 val2 = self.metrics_rt_RI[metric]
 
-                # Check whether the value is NaN
+                # 检查是否为nan
                 if np.isnan(val1) or np.isnan(val2):
                     continue
 
@@ -633,7 +633,7 @@ class RetentionTimeAnalyzerApp:
         else:
             results_text += "Both methods perform similarly.\n"
 
-        # Add a warning about constant models
+        # 添加关于常数模型的警告
         if self.metrics_rt_pred.get('Is Constant', False):
             results_text += "\n⚠️ CRITICAL ISSUE: Direct Model output is constant!\n"
             results_text += "   • This model has not learned any patterns\n"
@@ -718,11 +718,11 @@ class RetentionTimeAnalyzerApp:
         size = self.chart_settings['scatter_size']
         marker = self.chart_settings['marker_shape']
 
-        # Get the R² value
+        # 获取R²值
         r2_direct = self.metrics_rt_pred.get('R²', 0)
         r2_ri = self.metrics_rt_RI.get('R²', 0)
 
-        # Format the R² display
+        # 格式化R²显示
         if r2_direct < 0:
             r2_direct_label = f'Direct Model (R²={r2_direct:.3f}) - WORSE than mean'
         else:
@@ -748,7 +748,7 @@ class RetentionTimeAnalyzerApp:
         # Add regression lines if enabled
         if self.chart_settings['show_regression_line']:
             # Direct model regression
-            if np.std(self.df['rt_pred']) > 0: # check whether there is variation
+            if np.std(self.df['rt_pred']) > 0:  # 检查是否有变化
                 z1 = np.polyfit(self.df['rt'], self.df['rt_pred'], 1)
                 p1 = np.poly1d(z1)
                 x_range = np.linspace(self.df['rt'].min(), self.df['rt'].max(), 100)
@@ -757,7 +757,7 @@ class RetentionTimeAnalyzerApp:
                         linewidth=self.chart_settings['line_width'],
                         label=f'Direct fit: y={z1[0]:.3f}x+{z1[1]:.3f}')
             else:
-                # If it is constant, draw a horizontal line
+                # 如果是常数，画水平线
                 constant_val = self.df['rt_pred'].iloc[0]
                 ax.axhline(y=constant_val, color=self.chart_settings['color_direct'],
                            linestyle='--', linewidth=self.chart_settings['line_width'],
@@ -784,7 +784,7 @@ class RetentionTimeAnalyzerApp:
         if self.chart_settings['show_legend']:
             ax.legend(fontsize=self.chart_settings['font_size'] - 2)
 
-        # Add annotation for the ideal line
+        # 添加理想线的注释
         ax.text(0.05, 0.95, 'Ideal: Points on diagonal line',
                 transform=ax.transAxes, fontsize=9,
                 verticalalignment='top',
@@ -1032,10 +1032,10 @@ class RetentionTimeAnalyzerApp:
         if self.chart_settings['show_legend']:
             ax.legend(fontsize=self.chart_settings['font_size'] - 2)
 
-        # Add a reference line
+        # 添加参考线
         ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5)
 
-        # For R², add a target line
+        # 对于R²，添加目标线
         if 'R²' in metrics_to_show:
             idx = metrics_to_show.index('R²')
             ax.axhline(y=1.0, color='green', linestyle=':', alpha=0.5,
@@ -1086,7 +1086,7 @@ class RetentionTimeAnalyzerApp:
 
         # Regression line
         if self.chart_settings['show_regression_line']:
-            if np.std(y_pred) > 0: # check whether there is variation
+            if np.std(y_pred) > 0:  # 检查是否有变化
                 z = np.polyfit(x_true, y_pred, 1)
                 p = np.poly1d(z)
                 x_range = np.linspace(min(x_true), max(x_true), 100)
@@ -1094,7 +1094,7 @@ class RetentionTimeAnalyzerApp:
                         linewidth=self.chart_settings['line_width'] * 1.5,
                         label=f'y = {z[0]:.3f}x + {z[1]:.3f}')
             else:
-                # If it is constant, draw a horizontal line
+                # 如果是常数，画水平线
                 constant_val = y_pred.iloc[0] if hasattr(y_pred, 'iloc') else y_pred[0]
                 ax.axhline(y=constant_val, color='red',
                            linestyle='--', linewidth=self.chart_settings['line_width'] * 1.5,
@@ -1133,7 +1133,7 @@ class RetentionTimeAnalyzerApp:
         if self.chart_settings['show_legend'] and self.chart_settings['show_regression_line']:
             ax.legend(fontsize=self.chart_settings['font_size'] - 2)
 
-        # Add a diagonal reference line
+        # 添加对角线参考线
         min_val = min(min(x_true), min(y_pred))
         max_val = max(max(x_true), max(y_pred))
         ax.plot([min_val, max_val], [min_val, max_val], 'k:', alpha=0.3, label='Ideal')

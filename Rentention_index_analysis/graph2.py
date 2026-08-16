@@ -11,7 +11,7 @@ from matplotlib.figure import Figure
 import matplotlib
 import matplotlib.font_manager as fm
 
-# ==================== Global font settings ====================
+# ==================== 全局字体设置 ====================
 def setup_font():
     plt.rcParams['font.family'] = 'Times New Roman'
     plt.rcParams['axes.unicode_minus'] = False
@@ -37,13 +37,13 @@ class RetentionTimeAnalyzerApp:
         # Initialize variables
         self.df = None
         self.model_names = {
-            'rt_smrt_pred': 'Literature model (60k)',
-            'rt_M1_pred': 'Non-literature model',
-            'rt_M2_pred': 'Literature condition model',
-            'rt_M3_pred': 'Literature RI model'
+            'rt_smrt_pred': 'Literature Mdel (60k)',
+            'rt_M1_pred': 'Non-Literature Model',
+            'rt_M2_pred': 'Literature Condition Model',
+            'rt_M3_pred': 'Literature RI Model'
         }
 
-        # ()
+        # 配色方案（与之前拟合图一致）
         self.chart_settings = {
             'scatter_alpha': 0.7,
             'scatter_size': 50,
@@ -52,12 +52,12 @@ class RetentionTimeAnalyzerApp:
             'font_size': 10,
             'title_size': 12,
             'colors': {
-            'rt_smrt_pred': '#012f48', #
-            'rt_M1_pred': '#7a0101', #
-            'rt_M2_pred': '#035830', #
-            'rt_M3_pred': '#669aba', #
-            'rt_actual': '#4c4c4c', #
-            'rti_M3_pred': '#be1420' #
+            'rt_smrt_pred': '#012f48',  # 深蓝
+            'rt_M1_pred': '#7a0101',  # 深红褐
+            'rt_M2_pred': '#035830',  # 深绿
+            'rt_M3_pred': '#669aba',  # 灰蓝
+            'rt_actual': '#4c4c4c',  # 深灰
+            'rti_M3_pred': '#be1420'  # 红
             },
             'show_grid': True,
             'show_legend': True,
@@ -267,10 +267,10 @@ class RetentionTimeAnalyzerApp:
         color_group.pack(fill=tk.X, padx=5, pady=5)
 
         colors = [
-            ('Literature model (60k)', 'rt_smrt_pred'),
-            ('Non-literature model', 'rt_M1_pred'),
-            ('Literature condition model', 'rt_M2_pred'),
-            ('Literature RI model', 'rt_M3_pred'),
+            ('Literature Model (60k)', 'rt_smrt_pred'),
+            ('Non-literature Model', 'rt_M1_pred'),
+            ('Literature Condition Model', 'rt_M2_pred'),
+            ('Literature RI Model', 'rt_M3_pred'),
             ('Actual value', 'rt_actual'),
             ('Retention Index', 'rti_M3_pred')
         ]
@@ -1759,12 +1759,12 @@ class RetentionTimeAnalyzerApp:
             'font_size': 10,
             'title_size': 12,
             'colors': {
-                'rt_smrt_pred': '#012f48', #
-                'rt_M1_pred': '#7a0101', #
-                'rt_M2_pred': '#035830', #
-                'rt_M3_pred': '#669aba', #
-                'rt_actual': '#4c4c4c', #
-                'rti_M3_pred': '#be1420' #
+                'rt_smrt_pred': '#012f48',  # 深蓝
+                'rt_M1_pred': '#7a0101',  # 深红褐
+                'rt_M2_pred': '#035830',  # 深绿
+                'rt_M3_pred': '#669aba',  # 灰蓝
+                'rt_actual': '#4c4c4c',  # 深灰
+                'rti_M3_pred': '#be1420'  # 红
             },
             'show_grid': True,
             'show_legend': True,
@@ -1811,7 +1811,7 @@ class RetentionTimeAnalyzerApp:
             try:
                 with open(settings_file, 'r') as f:
                     loaded_settings = json.load(f)
-                # colors , sci
+                # 移除 colors 键，防止覆盖 sci 配色
                 if 'colors' in loaded_settings:
                     del loaded_settings['colors']
                 self.chart_settings.update(loaded_settings)
