@@ -19,7 +19,6 @@ ppg-ri-retention-prediction/
 ├── README.md
 ├── README_English_code_package.md
 ├── CODE_AVAILABILITY.md
-├── CITATION.cff
 ├── LICENSE_NOTICE.md
 ├── environment.yml
 ├── requirements.txt
@@ -126,18 +125,3 @@ The package uses common scientific Python packages together with Chemprop, RDKit
 4. Use the plotting scripts in `Rentention_index_analysis/` to regenerate model-comparison figures.
 
 Some scripts were originally used as analysis notebooks/scripts during manuscript preparation and may require local path selection or minor path adaptation for independent reruns.
-
-## Reproducibility Notes
-
-- This repository is a reproducibility and peer-review support archive, not a polished software package.
-- Several scripts are figure-specific or exploratory.
-- Processed third-party/public datasets are included only to support the reported analysis. Users should cite the original data sources where applicable.
-- Raw proprietary instrument files are not included unless explicitly listed in the manuscript or Supporting Information.
-
-## Citation
-
-If you use this package, cite the associated manuscript and this repository release. See `CITATION.cff`.
-
-## Contact
-
-For questions about the manuscript, data package, or model artifacts, contact the corresponding authors listed in the manuscript.

@@ -1,7 +1,7 @@
 # License Notice
 
-No reuse license has been finalized for this repository yet.
+No formal open-source license has been assigned to this repository at this stage.
 
-Before making the repository public, the authors should choose a license that is acceptable to all authors and institutions. Common choices for code include MIT, BSD-3-Clause, or Apache-2.0. Data and model artifacts may require a separate license or access statement if third-party sources are involved.
+The repository is provided to support peer review and reproducibility of the associated manuscript. It contains processed data, analysis scripts, and trained model artifacts used in the study.
 
-Until a formal `LICENSE` file is added, external reuse rights are not explicitly granted.
+Until the authors and institutions choose a formal license and add a separate `LICENSE` file, external reuse rights are not explicitly granted. Users should cite the associated manuscript and the original sources of any third-party/public datasets described in the repository documentation.
